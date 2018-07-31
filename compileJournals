@@ -1,0 +1,117 @@
+import openpyxl
+import math
+import time as tt
+import datetime as dt
+import re
+import os
+import sys
+
+def findFiles(cwd):
+	currentYear = datetime.date.today().year
+	xlFiles = [f for f in os.listdir(cwd) if isfile(os.join(cwd, f))]
+	xlFiles = [lambda x: re.search(r'.*___.*%s.*xlsm' %currentYear, xlFiles).group(0)] #replace __ with mask of document
+	for item in xlFiles:
+		if re.search(r'.*Сводный_журнал_ ___.*%s.*xlsm' %currentYear, item) == None:#replace __ with mask of document
+			createJournal(cwd)
+		else:
+			cJournal = item
+			xlFiles.pop(xlFiles.index(item))
+	for file in os.listdir(cwd):
+		if file.endswith("config.txt"):
+			comfigFile = os.join(cwd,file)
+	return xlFiles,config, cJournal
+
+def createJournal(cwd):
+	wb = openpyxl.Workbook()
+	wb.create_sheet('__') #replace __ with mask of document
+	wb.create_sheet('___') #replace __ with mask of document
+	currentYear = datetime.date.today().year
+	wb.save(cwd+'\\Сводйный_журнал_ ___ _%s.xlsm' %currentYear) #replace __ with mask of document
+	f = open('config.txt', 'tw', encoding='utf-8')
+	f.close()
+	
+def compileFile(jList,config,journal,cwd): #by rows
+	workbook = openpyxl.load_workbook(journal)
+	#wb = op.load_workbook('/tmp/test.xlsx', use_iterators=True) без этого может не работать итератор
+#########check configuration info : get last row for every user in their files
+	if os.stat(config).st_size == 0:
+		startPos = 0
+	else:
+		userConf = {}
+		with open(config,'r') as conf:
+			for line in conf:
+				userConf[line.split('-')[0]] = line.split('-')[1]
+###############################################################################
+#append new row in journal  
+	for jItem in jList:
+		wb = openpyxl.load_workbook(jItem,read_only=True)
+		for sheet in wb.sheetnames:
+			userName = sheet.split('_')[1]   #example : DD_NAME
+			sheetName = sheet.split('_')[0]  #example : DTE_NAME
+			startPos = userConf[userName]
+			endPos = sheet.max_row
+			#sheetFromCopy = actually sheetName
+			sheetToCopy = workbook.get_sheet_by_name(sheetName)
+			for row in sheet.iter_rows(row_offset=1, min_row = startPos,max_row = endPos):
+				row+= userName
+				#row.styles - вероятно придется писать итераторы для ячеек, чтоб переносить с сохранением стилей.
+				#или написать перенос по строкам и автоматическое заполнение стилей по содержимому ячеек (на чито время хватит)
+				sheetToCopy.append(row)
+			
+				
+	return None # ¯\_(ツ)_/¯
+	
+def readWriteConfig(conf,mode,dict = None): # здесь conf на чтение - путь к файлу , на запись - словарь конфигурации. Прости за такой листинг, я прогер , я так вижу  ¯\_(ツ)_/¯
+	if mode:
+		cfgDict = {}	
+		with open(conf,'r') as cfg:
+			for line in cfg:
+				cfgDict[line.split('-')[0]] = line.split('-')[1]
+	else:
+		open(conf, 'w').close()
+		with open(conf,'a') as cfg:
+			for key in dict:
+				cfg.write('%s-%s' %(key, dict[key]))
+	#return userConfig
+	
+def compileFile(jList,config,journal,cwd): #by cells
+	workbook = openpyxl.load_workbook(journal)
+	#wb = op.load_workbook('/tmp/test.xlsx', use_iterators=True) без этого может не работать итератор
+#########check configuration info : get last row for every user in their files
+	if os.stat(config).st_size == 0:
+		startPos = 0
+	else:
+		userConf = readWriteConfig(config,True)
+###############################################################################
+#append new row in journal  
+	for jItem in jList:
+		wb = openpyxl.load_workbook(jItem,read_only=True)
+		for sheet in wb.sheetnames:
+			userName = sheet.split('_')[1]   #example : DD_NAME
+			sheetName = sheet.split('_')[0]  #example : DTE_NAME
+			startPosRow = userConf[userName]+1
+			endPosCol = sheet.max_column
+			startPosRowToCopy = wb.max_row + 1
+			sheetToCopy = workbook.get_sheet_by_name(sheetName)
+			for row in sheet.iter_rows(row_offset=1, min_row = startPos,max_row = endPos):
+				for cell in row:
+					newCell = sheetToCopy.cell(row = startPosRowToCopy,column = cell.col_idx, value = cell.value)
+					if cell.has_style:
+						new_cell.font = copy(cell.font)
+						new_cell.border = copy(cell.border)
+						new_cell.fill = copy(cell.fill)
+						new_cell.number_format = copy(cell.number_format)
+						new_cell.protection = copy(cell.protection)
+						new_cell.alignment = copy(cell.alignment)
+				startPosRowToCopy+=1
+		
+		readWriteConfig(config,False,userConf)
+	return None # ¯\_(ツ)_/¯
+	
+def main():
+	workDir = os.getcwd()
+	journalList,configFile,journalFile = findFiles(workDir)
+	compileFile(journalList,configFile,journalFile,workDir)
+	
+if __name__ == '__main__':
+	main()
