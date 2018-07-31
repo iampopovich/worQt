@@ -5,31 +5,14 @@ import datetime as dt
 import re
 import os
 import sys
-
+'''
 def findFiles(cwd):
-	currentYear = datetime.date.today().year
-	xlFiles = [f for f in os.listdir(cwd) if isfile(os.join(cwd, f))]
-	xlFiles = [lambda x: re.search(r'.*___.*%s.*xlsm' %currentYear, xlFiles).group(0)] #replace __ with mask of document
-	for item in xlFiles:
-		if re.search(r'.*Сводный_журнал_ ___.*%s.*xlsm' %currentYear, item) == None:#replace __ with mask of document
-			createJournal(cwd)
-		else:
-			cJournal = item
-			xlFiles.pop(xlFiles.index(item))
-	for file in os.listdir(cwd):
-		if file.endswith("config.txt"):
-			comfigFile = os.join(cwd,file)
-	return xlFiles,config, cJournal
-
 def createJournal(cwd):
-	wb = openpyxl.Workbook()
-	wb.create_sheet('__') #replace __ with mask of document
-	wb.create_sheet('___') #replace __ with mask of document
-	currentYear = datetime.date.today().year
-	wb.save(cwd+'\\Сводйный_журнал_ ___ _%s.xlsm' %currentYear) #replace __ with mask of document
-	f = open('config.txt', 'tw', encoding='utf-8')
-	f.close()
-	
+def compileFile(jList,config,journal,cwd):
+def readWriteConfig(conf,mode,dict = None):
+'''
+
+'''	
 def compileFile(jList,config,journal,cwd): #by rows
 	workbook = openpyxl.load_workbook(journal)
 	#wb = op.load_workbook('/tmp/test.xlsx', use_iterators=True) без этого может не работать итератор
@@ -37,10 +20,7 @@ def compileFile(jList,config,journal,cwd): #by rows
 	if os.stat(config).st_size == 0:
 		startPos = 0
 	else:
-		userConf = {}
-		with open(config,'r') as conf:
-			for line in conf:
-				userConf[line.split('-')[0]] = line.split('-')[1]
+		userConf = readWriteConfig(config,True)
 ###############################################################################
 #append new row in journal  
 	for jItem in jList:
@@ -59,20 +39,44 @@ def compileFile(jList,config,journal,cwd): #by rows
 				sheetToCopy.append(row)
 			
 				
-	return None # ¯\_(ツ)_/¯
-	
+	return None #
+'''
+
+def findFiles(cwd):
+	currentYear = datetime.date.today().year
+	xlFiles = [f for f in os.listdir(cwd) if isfile(os.join(cwd, f))]
+	xlFiles = [lambda x: re.search(r'.*ДТЭ.*%s.*xlsm' %currentYear, xlFiles).group(0)]
+	for item in xlFiles:
+		if re.search(r'.*Сводный_журнал_ДТЭ.*%s.*xlsm' %currentYear, item) == None:
+			createJournal(cwd)
+		else:
+			cJournal = item
+			xlFiles.pop(xlFiles.index(item))
+	for file in os.listdir(cwd):
+		if file.endswith("config.txt"):
+			comfigFile = os.join(cwd,file)
+	return xlFiles,config, cJournal
+
+def createJournal(cwd):
+	wb = openpyxl.Workbook()
+	wb.create_sheet('ДД')
+	wb.create_sheet('ДТЭ')
+	currentYear = datetime.date.today().year
+	wb.save(cwd+'\\Сводйный_журнал_ДТЭ_%s.xlsm' %currentYear)
+	f = open('config.txt', 'tw', encoding='utf-8')
+	f.close()
+
 def readWriteConfig(conf,mode,dict = None): # здесь conf на чтение - путь к файлу , на запись - словарь конфигурации. Прости за такой листинг, я прогер , я так вижу  ¯\_(ツ)_/¯
 	if mode:
 		cfgDict = {}	
 		with open(conf,'r') as cfg:
 			for line in cfg:
-				cfgDict[line.split('-')[0]] = line.split('-')[1]
+				cfgDict[line.split('-')[0]] = [line.split('-')[1],line.split('-')[2]]
 	else:
 		open(conf, 'w').close()
 		with open(conf,'a') as cfg:
 			for key in dict:
 				cfg.write('%s-%s' %(key, dict[key]))
-	#return userConfig
 	
 def compileFile(jList,config,journal,cwd): #by cells
 	workbook = openpyxl.load_workbook(journal)
