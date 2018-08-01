@@ -1,5 +1,4 @@
 import openpyxl
-import math
 import time as tt
 import datetime as dt
 import re
@@ -66,41 +65,38 @@ def createJournal(cwd):
 	f = open('config.txt', 'tw', encoding='utf-8')
 	f.close()
 
-def readWriteConfig(conf,mode,dict = None): # здесь conf на чтение - путь к файлу , на запись - словарь конфигурации. Прости за такой листинг, я прогер , я так вижу  ¯\_(ツ)_/¯
+def readWriteConfig(conf,mode,dict = None):
 	if mode:
 		cfgDict = {}	
 		with open(conf,'r') as cfg:
 			for line in cfg:
 				cfgDict[line.split('-')[0]] = [line.split('-')[1],line.split('-')[2]]
 	else:
-		open(conf, 'w').close()
+		open(conf, 'w').close() #clear config file
 		with open(conf,'a') as cfg:
 			for key in dict:
-				cfg.write('%s-%s' %(key, dict[key]))
+				cfg.write('%s-%s\n' %(key, dict[key]))
 	
 def compileFile(jList,config,journal,cwd): #by cells
 	workbook = openpyxl.load_workbook(journal)
 	#wb = op.load_workbook('/tmp/test.xlsx', use_iterators=True) без этого может не работать итератор
-#########check configuration info : get last row for every user in their files
 	if os.stat(config).st_size == 0:
 		startPos = 0
 	else:
 		userConf = readWriteConfig(config,True)
-###############################################################################
-#append new row in journal  
-	for jItem in jList:
+	for jItem in jList: #append new row in journal  
 		wb = openpyxl.load_workbook(jItem,read_only=True)
 		for sheet in wb.sheetnames:
 			userName = sheet.split('_')[1]   #example : DD_NAME
 			sheetName = sheet.split('_')[0]  #example : DTE_NAME
 			startPosRow = userConf[userName]+1
-			endPosCol = sheet.max_column
-			startPosRowToCopy = wb.max_row + 1
-			sheetToCopy = workbook.get_sheet_by_name(sheetName)
+			endPosCol = sheet.max_column 
+			startPosRowToCopy = wb.max_row + 1 #get first empty row in book
+			sheetToCopy = workbook.get_sheet_by_name(sheetName) #copy cells to the same sheet in new workbook
 			for row in sheet.iter_rows(row_offset=1, min_row = startPos,max_row = endPos):
 				for cell in row:
 					newCell = sheetToCopy.cell(row = startPosRowToCopy,column = cell.col_idx, value = cell.value)
-					if cell.has_style:
+					if cell.has_style: #get and copy cell style if it possible
 						new_cell.font = copy(cell.font)
 						new_cell.border = copy(cell.border)
 						new_cell.fill = copy(cell.fill)
@@ -108,7 +104,6 @@ def compileFile(jList,config,journal,cwd): #by cells
 						new_cell.protection = copy(cell.protection)
 						new_cell.alignment = copy(cell.alignment)
 				startPosRowToCopy+=1
-		
 		readWriteConfig(config,False,userConf)
 	return None # ¯\_(ツ)_/¯
 	
