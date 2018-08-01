@@ -70,7 +70,7 @@ def readWriteConfig(conf,mode,dict = None):
 		cfgDict = {}	
 		with open(conf,'r') as cfg:
 			for line in cfg:
-				cfgDict[line.split('-')[0]] = [line.split('-')[1],line.split('-')[2]]
+				cfgDict[line.split('-')[0]] = [line.split('-')[1],line.split('-')[2]] #get values for user - lastRowDD - lastRowDTE
 	else:
 		open(conf, 'w').close() #clear config file
 		with open(conf,'a') as cfg:
@@ -90,7 +90,7 @@ def compileFile(jList,config,journal,cwd): #by cells
 			userName = sheet.split('_')[1]   #example : DD_NAME
 			sheetName = sheet.split('_')[0]  #example : DTE_NAME
 			startPosRow = userConf[userName]+1
-			endPosCol = sheet.max_column 
+			endPosCol = sheet.max_column #get max column for iterator through columns in same sheets
 			startPosRowToCopy = wb.max_row + 1 #get first empty row in book
 			sheetToCopy = workbook.get_sheet_by_name(sheetName) #copy cells to the same sheet in new workbook
 			for row in sheet.iter_rows(row_offset=1, min_row = startPos,max_row = endPos):
