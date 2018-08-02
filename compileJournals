@@ -58,8 +58,7 @@ def findFiles(cwd):
 
 def createJournal(cwd):
 	wb = openpyxl.Workbook()
-	wb.create_sheet('ДД')
-	wb.create_sheet('ДТЭ')
+	fn = [wb.create_sheet(name) for name in ['ДД','ДТЭ']]
 	currentYear = datetime.date.today().year
 	wb.save(cwd+'\\Сводйный_журнал_ДТЭ_%s.xlsm' %currentYear)
 	f = open('config.txt', 'tw', encoding='utf-8')
@@ -78,7 +77,7 @@ def readWriteConfig(conf,mode,dict = None):
 		with open(conf,'a') as cfg:
 			for key in dict:
 				for subKey in subDict:
-					cfg.write('%s-%s-%s\n' %(key,subKey,subDict[subKey]))
+					cfg.write('%s-%s-%s\n' %(key,subKey,subDict[subKey])) #path - sheetName - lastRow
 	
 def compileFile(jList,config,journal,cwd): #by cells
 	workbook = openpyxl.load_workbook(journal)
@@ -90,9 +89,9 @@ def compileFile(jList,config,journal,cwd): #by cells
 	for jItem in jList: #append new row in journal  
 		wb = openpyxl.load_workbook(jItem,read_only=True)
 		for sheet in wb.sheetnames:
-			userName = sheet.title.split('_')[1]   #example : DD_NAME
 			sheetName = sheet.title.split('_')[0]  #example : DTE_NAME
-			startPosRow = userConf[jItem]+1
+			userName = sheet.title.split('_')[1]   #example : DD_NAME
+			startPosRow = userConf[jItem][sheetName] + 1
 			endPosCol = sheet.max_column #get max column for iterator through columns in same sheets
 			startPosRowToCopy = wb.max_row + 1 #get first empty row in book
 			sheetToCopy = workbook.get_sheet_by_name(sheetName.title) #copy cells to the same sheet in new workbook
@@ -100,12 +99,12 @@ def compileFile(jList,config,journal,cwd): #by cells
 				for cell in row:
 					newCell = sheetToCopy.cell(row = startPosRowToCopy,column = cell.col_idx, value = cell.value)
 					if cell.has_style: #get and copy cell style if it possible
-						new_cell.font = copy(cell.font)
-						new_cell.border = copy(cell.border)
-						new_cell.fill = copy(cell.fill)
-						new_cell.number_format = copy(cell.number_format)
-						new_cell.protection = copy(cell.protection)
-						new_cell.alignment = copy(cell.alignment)
+						new_cell.style.font = cell.style.font
+						new_cell.style.border = cell.style.border
+						new_cell.style.fill = cell.style.fill
+						new_cell.style.number_format = cell.style.number_format
+						new_cell.style.protection = cell.style.protection
+						new_cell.style.alignment = cell.style.alignment
 				startPosRowToCopy+=1
 		userConf[jItem] = {sheetName:endPos}#####
 		readWriteConfig(config,False,userConf)
