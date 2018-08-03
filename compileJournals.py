@@ -4,41 +4,12 @@ import datetime as dt
 import re
 import os
 import sys
+import lib_headers as hh
 '''
 def findFiles(cwd):
 def createJournal(cwd):
 def compileFile(jList,config,journal,cwd):
 def readWriteConfig(conf,mode,dict = None):
-'''
-
-'''	
-def compileFile(jList,config,journal,cwd): #by rows
-	workbook = openpyxl.load_workbook(journal)
-	#wb = op.load_workbook('/tmp/test.xlsx', use_iterators=True) без этого может не работать итератор
-#########check configuration info : get last row for every user in their files
-	if os.stat(config).st_size == 0:
-		startPos = 0
-	else:
-		userConf = readWriteConfig(config,True)
-###############################################################################
-#append new row in journal  
-	for jItem in jList:
-		wb = openpyxl.load_workbook(jItem,read_only=True)
-		for sheet in wb.sheetnames:
-			userName = sheet.split('_')[1]   #example : DD_NAME
-			sheetName = sheet.split('_')[0]  #example : DTE_NAME
-			startPos = userConf[userName]
-			endPos = sheet.max_row
-			#sheetFromCopy = actually sheetName
-			sheetToCopy = workbook.get_sheet_by_name(sheetName)
-			for row in sheet.iter_rows(row_offset=1, min_row = startPos,max_row = endPos):
-				row+= userName
-				#row.styles - вероятно придется писать итераторы для ячеек, чтоб переносить с сохранением стилей.
-				#или написать перенос по строкам и автоматическое заполнение стилей по содержимому ячеек (на чито время хватит)
-				sheetToCopy.append(row)
-			
-				
-	return None #
 '''
 
 def findFiles(cwd):
@@ -58,7 +29,10 @@ def findFiles(cwd):
 
 def createJournal(cwd):
 	wb = openpyxl.Workbook()
-	fn = [wb.create_sheet(name) for name in ['ДД','ДТЭ']]
+	for name in ['ДД','ДТЭ']:
+		wb.create_sheet(name)
+		activeSheet = wb.get_sheet_by_name(name)
+		activeSheet.append(hh.getHeaders(name))
 	currentYear = datetime.date.today().year
 	wb.save('%s\\Сводйный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear))
 	try:
@@ -109,6 +83,7 @@ def compileFile(jList,config,journal,cwd): #by cells
 						new_cell.style.number_format = cell.style.number_format
 						new_cell.style.protection = cell.style.protection
 						new_cell.style.alignment = cell.style.alignment
+				newCell = sheetToCopy.cell(row = startPosRowToCopy,column = endPosCol + 1, value = userName) #дописываем фамилию в конец строки (после последнего столбца)
 				startPosRowToCopy+=1
 		userConf[jItem] = {sheetName:endPos}#####
 		readWriteConfig(config,False,userConf)
