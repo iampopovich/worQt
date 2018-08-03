@@ -86,12 +86,15 @@ def compileFile(jList,config,journal,cwd): #by cells
 	return None # ¯\_(ツ)_/¯
 	
 def main():
-	time
+	timeStart = dt.datetime.now().hour
 	workDir = os.getcwd()
 	while True:
 		journalList,configFile,journalFile = findFiles(workDir)
 		compileFile(journalList,configFile,journalFile,workDir)
-		tt.sleep(300) #wait for 5 minutes and repeat cycle
-		fn = break if tt.datetime.datetime.now() > 
+		tt.sleep(900) #wait for 15 minutes and repeat cycle
+		stopSwitch = (dt.datetime.now().hour - timeStart) > 9
+		fn = break if stopSwitch else pass
+	sys.exit(0)
+	
 if __name__ == '__main__':
 	main()
