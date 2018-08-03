@@ -16,12 +16,12 @@ def findFiles(cwd):
 	currentYear = datetime.date.today().year
 	xlFiles = [f for f in os.listdir(cwd) if isfile(os.join(cwd, f))]
 	xlFiles = [lambda x: re.search(r'.*ДТЭ.*%s.*xlsm' %currentYear, xlFiles).group(0)]
-	for item in xlFiles:
-		if re.search(r'.*Сводный_журнал_ДТЭ.*%s.*xlsm' %currentYear, item) == None:
+	for xlItem in xlFiles:
+		if re.search(r'.*Сводный_журнал_ДТЭ.*%s.*xlsm' %currentYear, xlItem) == None:
 			createJournal(cwd)
 		else:
-			cJournal = item
-			xlFiles.pop(xlFiles.index(item))
+			cJournal = xlItem
+			xlFiles.pop(xlFiles.index(xlItem))
 	for file in os.listdir(cwd):
 		if file.endswith("config.txt"):
 			comfigFile = os.join(cwd,file)
@@ -36,7 +36,8 @@ def createJournal(cwd):
 	currentYear = datetime.date.today().year
 	wb.save('%s\\Сводйный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear))
 	try:
-		f = pass if os.path.exists('%s\\config.txt' %cwd) else open('config.txt', 'tw', encoding='utf-8').close()
+		path = '%s\\config.txt' %cwd
+		fn = pass if os.path.exists(path) else open(path, 'tw', encoding='utf-8').close()
 	except Exteption as ex:
 		print('При создании файла конфигурации возникла ошибка')
 	return None
@@ -48,10 +49,10 @@ def readWriteConfig(conf,mode,dict = None):
 			for line in cfg:
 				splitLine = line.split('--')
 				cfgDict[splitLine[0]] = [splitLine[1],splitLine[2]] #get values for path - sheetName - lastRow
-				return cfgDict
+		return cfgDict
 	else: #try to write config file
-		f = pass if os.path.exists('%s\\config.txt' %cwd) else open('config.txt', 'tw', encoding='utf-8').close()
-		open(conf, 'w').close() #clear config file
+		fn = pass if os.path.exists('%s\\config.txt' %cwd) else open('config.txt', 'tw', encoding='utf-8').close()
+		#open(conf, 'w').close() #clear config file
 		with open(conf,'a') as cfg:
 			for key in dict:
 				for subKey in subDict:
@@ -68,7 +69,7 @@ def compileFile(jList,config,journal,cwd): #by cells
 		wb = openpyxl.load_workbook(jItem,read_only=True)
 		for sheet in wb.sheetnames:
 			sheetName = sheet.title.split('_')[0]  #example : DTE_NAME
-			userName = sheet.title.split('_')[1]   #example : DD_NAME
+			#userName = sheet.title.split('_')[1]   #example : DD_NAME - имя содержится в столбце S , не нужно его дергать
 			startPosRow = userConf[jItem][sheetName] + 1
 			endPosCol = sheet.max_column #get max column for iterator through columns in same sheets
 			startPosRowToCopy = wb.max_row + 1 #get first empty row in book
@@ -83,7 +84,7 @@ def compileFile(jList,config,journal,cwd): #by cells
 						new_cell.style.number_format = cell.style.number_format
 						new_cell.style.protection = cell.style.protection
 						new_cell.style.alignment = cell.style.alignment
-				newCell = sheetToCopy.cell(row = startPosRowToCopy,column = endPosCol + 1, value = userName) #дописываем фамилию в конец строки (после последнего столбца)
+				#newCell = sheetToCopy.cell(row = startPosRowToCopy,column = endPosCol + 1, value = userName) #дописываем фамилию в конец строки (после последнего столбца)
 				startPosRowToCopy+=1
 		userConf[jItem] = {sheetName:endPos}#####
 		readWriteConfig(config,False,userConf)
