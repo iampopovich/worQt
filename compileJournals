@@ -54,16 +54,19 @@ def findFiles(cwd):
 	for file in os.listdir(cwd):
 		if file.endswith("config.txt"):
 			comfigFile = os.join(cwd,file)
-	return xlFiles,config, cJournal
+	return xlFiles,config,cJournal
 
 def createJournal(cwd):
 	wb = openpyxl.Workbook()
 	fn = [wb.create_sheet(name) for name in ['ДД','ДТЭ']]
 	currentYear = datetime.date.today().year
-	wb.save(cwd+'\\Сводйный_журнал_ДТЭ_%s.xlsm' %currentYear)
-	f = open('config.txt', 'tw', encoding='utf-8')
-	f.close()
-
+	wb.save('%s\\Сводйный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear))
+	try:
+		f = pass if os.path.exists('%s\\config.txt' %cwd) else open('config.txt', 'tw', encoding='utf-8').close()
+	except Exteption as ex:
+		print('При создании файла конфигурации возникла ошибка')
+	return None
+	
 def readWriteConfig(conf,mode,dict = None):
 	if mode:
 		cfgDict = {}	
@@ -77,7 +80,7 @@ def readWriteConfig(conf,mode,dict = None):
 		with open(conf,'a') as cfg:
 			for key in dict:
 				for subKey in subDict:
-					cfg.write('%s-%s-%s\n' %(key,subKey,subDict[subKey])) #path - sheetName - lastRow
+					cfg.write('%s--%s--%s\n' %(key,subKey,subDict[subKey])) #path - sheetName - lastRow
 	
 def compileFile(jList,config,journal,cwd): #by cells
 	workbook = openpyxl.load_workbook(journal)
