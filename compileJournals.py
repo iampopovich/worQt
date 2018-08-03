@@ -24,7 +24,7 @@ def findFiles(cwd):
 			xlFiles.pop(xlFiles.index(xlItem))
 	for file in os.listdir(cwd):
 		if file.endswith("config.txt"):
-			comfigFile = os.join(cwd,file)
+			config = os.join(cwd,file)
 	return xlFiles,config,cJournal
 
 def createJournal(cwd):
@@ -59,24 +59,22 @@ def readWriteConfig(conf,mode,dict = None):
 					cfg.write('%s--%s--%s\n' %(key,subKey,subDict[subKey])) #path - sheetName - lastRow
 	
 def compileFile(jList,config,journal,cwd): #by cells
-	workbook = openpyxl.load_workbook(journal)
-	#wb = op.load_workbook('/tmp/test.xlsx', use_iterators=True) без этого может не работать итератор
-	if os.stat(config).st_size == 0:
-		startPos = 0
-	else:
-		userConf = readWriteConfig(config,True)
-	for jItem in jList: #append new row in journal  
-		wb = openpyxl.load_workbook(jItem,read_only=True)
-		for sheet in wb.sheetnames:
-			sheetName = sheet.title.split('_')[0]  #example : DTE_NAME
-			#userName = sheet.title.split('_')[1]   #example : DD_NAME - имя содержится в столбце S , не нужно его дергать
-			startPosRow = userConf[jItem][sheetName] + 1
-			endPosCol = sheet.max_column #get max column for iterator through columns in same sheets
-			startPosRowToCopy = wb.max_row + 1 #get first empty row in book
-			sheetToCopy = workbook.get_sheet_by_name(sheetName.title) #copy cells to the same sheet in new workbook
-			for row in sheet.iter_rows(row_offset=1, min_row = startPos,max_row = endPos):
+	wbToCopy = openpyxl.load_workbook(journal)
+	#####clear compiled book
+	for sheet in wbFromCopy.sheetnames:
+		for row in sheet.iter_rows(row_offset=1, min_row = 1,max_row = sheet.max_row): #check specs for iter_rows
+			for cell in row:
+				sheetToCopy.cell(row = row ,column = cell.col_idx, value ='')
+	#############
+	for jItem in jList: 
+	wbFromCopy = openpyxl.load_workbook(jItem,read_only=True)
+		for sheetFromCopy in wbFromCopy.sheetnames:
+			sheetName = sheetFromCopy.title.split('_')[0]  #example : DTE_NAME
+			sheetToCopy = wbToCopy.get_sheet_by_name(sheetName.title) #copy cells to the same sheet in new workbook
+			for row in sheet.iter_rows(row_offset=1, min_row = 1,max_row = sheetFromCopy.max_row): #check specs for iter_rows
+				lastRow = sheetToCopy.max_row
 				for cell in row:
-					newCell = sheetToCopy.cell(row = startPosRowToCopy,column = cell.col_idx, value = cell.value)
+					newCell = sheetToCopy.cell(row = lastRow + 1 ,column = cell.col_idx, value = cell.value)
 					if cell.has_style: #get and copy cell style if it possible
 						new_cell.style.font = cell.style.font
 						new_cell.style.border = cell.style.border
@@ -84,16 +82,16 @@ def compileFile(jList,config,journal,cwd): #by cells
 						new_cell.style.number_format = cell.style.number_format
 						new_cell.style.protection = cell.style.protection
 						new_cell.style.alignment = cell.style.alignment
-				#newCell = sheetToCopy.cell(row = startPosRowToCopy,column = endPosCol + 1, value = userName) #дописываем фамилию в конец строки (после последнего столбца)
-				startPosRowToCopy+=1
-		userConf[jItem] = {sheetName:endPos}#####
-		readWriteConfig(config,False,userConf)
+				#lastRow += 1
 	return None # ¯\_(ツ)_/¯
 	
 def main():
+	time
 	workDir = os.getcwd()
-	journalList,configFile,journalFile = findFiles(workDir)
-	compileFile(journalList,configFile,journalFile,workDir)
-	
+	while True:
+		journalList,configFile,journalFile = findFiles(workDir)
+		compileFile(journalList,configFile,journalFile,workDir)
+		tt.sleep(300) #wait for 5 minutes and repeat cycle
+		fn = break if tt.datetime.datetime.now() > 
 if __name__ == '__main__':
 	main()
