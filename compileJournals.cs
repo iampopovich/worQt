@@ -1,4 +1,42 @@
 // https://code.msdn.microsoft.com/windowsapps/Utilizzo-della-libreria-77c28353
+// https://docs.microsoft.com/ru-ru/dotnet/csharp/programming-guide/interop/how-to-access-office-onterop-objects
+using System
+using System.IO
+
+using Excel = Microsoft.Office.Interop.Excel
+using Word = Microsoft.Office.Interop.Word
+
+static void main(){
+	string workDir = Directory.GetCurrentDirectory();
+	journalList,configFile,journalFile = findFiles(workDir)
+	compileFile(journalList,configFile,journalFile,workDir)
+}
+static void findFiles(cwd){
+	string currentYear = DateTime.Now.Year.ToString();
+	xlFiles = [f for f in os.listdir(cwd) if isfile(os.join(cwd, f))]
+	xlFiles = [lambda x: re.search(r'.*ДТЭ.*%s.*xlsm' %currentYear, xlFiles).group(0)]
+	foreach (var item in xlFiles){
+		Regex cJournalName = new Regex('.*Сводный_журнал_ДТЭ.*%s.*xlsm' %currentYear,RegexOptions.IgnoreCase);
+		MatchCollection matches = cJournalName.Matches(item)
+		if (matches != 0){}
+		return ( matches > 0 ? Periods.VariablePeriods : createJournal(cwd));
+			
+		else:
+			cJournal = item
+			xlFiles.pop(xlFiles.index(item))
+	}
+		
+	for file in os.listdir(cwd):
+		if file.endswith("config.txt"):
+			comfigFile = os.join(cwd,file)
+	return xlFiles,config,cJournal
+}
+static void createJournal(cwd){}
+static void readWriteConfig(){}
+static void compileFile(jList,config,journal,cwd){}
+
+
+////samples////
 //dll net framework 
 using System; 
 using System.Linq; 
