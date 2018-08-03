@@ -68,14 +68,15 @@ def createJournal(cwd):
 	return None
 	
 def readWriteConfig(conf,mode,dict = None):
-	if mode:
+	if mode: #try to read config file
 		cfgDict = {}	
 		with open(conf,'r') as cfg:
 			for line in cfg:
 				splitLine = line.split('--')
 				cfgDict[splitLine[0]] = [splitLine[1],splitLine[2]] #get values for path - sheetName - lastRow
 				return cfgDict
-	else:
+	else: #try to write config file
+		f = pass if os.path.exists('%s\\config.txt' %cwd) else open('config.txt', 'tw', encoding='utf-8').close()
 		open(conf, 'w').close() #clear config file
 		with open(conf,'a') as cfg:
 			for key in dict:
