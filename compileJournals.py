@@ -1,3 +1,6 @@
+#!/usr/bin/pythom
+#-*-coding: utf-8-*-
+import math
 import openpyxl
 import time as tt
 import datetime as dt
@@ -13,11 +16,11 @@ def readWriteConfig(conf,mode,dict = None):
 '''
 
 def findFiles(cwd):
-	currentYear = datetime.date.today().year
+	currentYear = dt.datetime.date.now().year
 	xlFiles = [f for f in os.listdir(cwd) if isfile(os.join(cwd, f))]
-	xlFiles = [lambda x: re.search(r'.*ДТЭ.*%s.*xlsm' %currentYear, xlFiles).group(0)]
+	xlFiles = [lambda x: re.search(r'.*DTE.*%s.*xlsm' %currentYear, xlFiles).group(0)]
 	for xlItem in xlFiles:
-		if re.search(r'.*Сводный_журнал_ДТЭ.*%s.*xlsm' %currentYear, xlItem) == None:
+		if re.search(r'.*svodniy_jurnal_DTE.*%s.*xlsm' %currentYear, xlItem) == None:
 			createJournal(cwd)
 		else:
 			cJournal = xlItem
@@ -29,15 +32,15 @@ def findFiles(cwd):
 
 def createJournal(cwd):
 	wb = openpyxl.Workbook()
-	for name in ['ДД','ДТЭ']:
+	for name in ['DD','DTE']:
 		wb.create_sheet(name)
 		activeSheet = wb.get_sheet_by_name(name)
 		activeSheet.append(hh.getHeaders(name))
-	currentYear = datetime.date.today().year
-	wb.save('%s\\Сводйный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear))
+	currentYear = datetime.date.now().year
+	wb.save('%s\\svodniy_jurnal_DTE_%s.xlsm' %(cwd,currentYear))
 	try:
-		path = '%s\\config.txt' %cwd
-		fn = pass if os.path.exists(path) else open(path, 'tw', encoding='utf-8').close()
+		path = '%s\\config.txt' %cwd 
+		fn = None if os.path.exists(path) else open(path,'tw',encoding='utf-8').close()
 	except Exteption as ex:
 		print('При создании файла конфигурации возникла ошибка')
 	return None
@@ -51,7 +54,12 @@ def readWriteConfig(conf,mode,dict = None):
 				cfgDict[splitLine[0]] = [splitLine[1],splitLine[2]] #get values for path - sheetName - lastRow
 		return cfgDict
 	else: #try to write config file
-		fn = pass if os.path.exists('%s\\config.txt' %cwd) else open('config.txt', 'tw', encoding='utf-8').close()
+		pass 
+		if os.path.exists('%s\\config.txt' %cwd):
+			pass
+		else:
+			file = open('config.txt', 'tw', encoding='utf-8')
+			file.close()
 		#open(conf, 'w').close() #clear config file
 		with open(conf,'a') as cfg:
 			for key in dict:
@@ -67,7 +75,7 @@ def compileFile(jList,config,journal,cwd): #by cells
 				sheetToCopy.cell(row = row ,column = cell.col_idx, value ='')
 	#############
 	for jItem in jList: 
-	wbFromCopy = openpyxl.load_workbook(jItem,read_only=True)
+		wbFromCopy = openpyxl.load_workbook(jItem,read_only=True)
 		for sheetFromCopy in wbFromCopy.sheetnames:
 			sheetName = sheetFromCopy.title.split('_')[0]  #example : DTE_NAME
 			sheetToCopy = wbToCopy.get_sheet_by_name(sheetName.title) #copy cells to the same sheet in new workbook
@@ -88,12 +96,14 @@ def compileFile(jList,config,journal,cwd): #by cells
 def main():
 	timeStart = dt.datetime.now().hour
 	workDir = os.getcwd()
-	while True:
+	stopSwitch = False
+	while stopSwitch:
 		journalList,configFile,journalFile = findFiles(workDir)
 		compileFile(journalList,configFile,journalFile,workDir)
 		tt.sleep(900) #wait for 15 minutes and repeat cycle
-		stopSwitch = (dt.datetime.now().hour - timeStart) > 9
-		fn = break if stopSwitch else pass
+		stopSwitch = ((dt.datetime.now().hour - timeStart) > 9)
+	print(workDir)
+	tt.sleep(10)
 	sys.exit(0)
 	
 if __name__ == '__main__':
