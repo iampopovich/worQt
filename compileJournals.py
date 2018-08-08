@@ -7,14 +7,12 @@ import datetime as dt
 import re
 import os
 import sys
-#import lib_headers as hh
 '''
 def findFiles(cwd):
 def createJournal(cwd):
 def compileFile(jList,config,journal,cwd):
 def readWriteConfig(conf,mode,dict = None):
 '''
-
 def getHeaders(key):
 	names = {'ДД':['Директивный документ','Этап контроля','Обозначение ДД',
 					'Размещение ДД в структуре папок ОКБ','Процедура выпуска',
@@ -32,7 +30,7 @@ def getHeaders(key):
 	return names.get(key)
 
 def findFiles(cwd):
-	currentYear = dt.datetime.date.now().year
+	currentYear = dt.datetime.now().year
 	xlFiles = [f for f in os.listdir(cwd) if isfile(os.join(cwd, f))]
 	xlFiles = [lambda x: re.search(r'.*DTE.*%s.*xlsm' %currentYear, xlFiles).group(0)]
 	for xlItem in xlFiles:
@@ -49,7 +47,7 @@ def createJournal(cwd):
 		wb.create_sheet(name)
 		activeSheet = wb.get_sheet_by_name(name)
 		activeSheet.append(getHeaders(name))
-	currentYear = datetime.date.now().year
+	currentYear = dt.datetime.now().year
 	wb.save('%s\\Сводный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear))
 	return None
 	
@@ -81,16 +79,14 @@ def compileFile(jList,journal,cwd): #by cells
 	return None # ¯\_(ツ)_/¯
 	
 def main():
-	timeStart = dt.datetime.now().hour
+	tStart = dt.datetime.now().hour
 	workDir = os.getcwd()
 	stopSwitch = False
 	journalList,journalFile = findFiles(workDir)
 	while not(stopSwitch):
-		#journalList,journalFile = findFiles(workDir)
 		compileFile(journalList,journalFile,workDir)
 		tt.sleep(900) #wait for 15 minutes and repeat cycle
-		stopSwitch = ((dt.datetime.now().hour - timeStart) > 9)
-	print(workDir)
+		stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
 	tt.sleep(10)
 	sys.exit(0)
 	
