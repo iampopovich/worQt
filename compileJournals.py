@@ -7,13 +7,29 @@ import datetime as dt
 import re
 import os
 import sys
-import lib_headers as hh
+#import lib_headers as hh
 '''
 def findFiles(cwd):
 def createJournal(cwd):
 def compileFile(jList,config,journal,cwd):
 def readWriteConfig(conf,mode,dict = None):
 '''
+
+def getHeaders(key):
+	names = {'ДД':['Директивный документ','Этап контроля','Обозначение ДД',
+					'Размещение ДД в структуре папок ОКБ','Процедура выпуска',
+					'Оформление ДД','Соответствие ДД модели данных',
+					'Модуль создания ДД','Применяемость','Указание о внедрении/заделе',
+					'Согласовано','Примечание','Дата','Проверку выполнил'],
+			'ДТЭ':['Обозначение КД/Ревизия-Наименование',
+					'Тип объекта','Владелец','Подразделение','Обозначение ДД',
+					'Этап контроля','Обозначение /Процедура выпуска',
+					'Размещение в структуре папок ОКБ\nВходимость в головную сборку/проект',
+					'Соответствие модели данных/Время сохранения',
+					'Оформление/Состав ЭМ','Ограничения/WAVE-связи','Масса/Материал/Атрибуты',
+					'Геометрия/Допуски','Слои/Ссылочные наборы','Анализ зазоров','Согласовано'
+					'Документ на отклонение от требований НД','Дата','Проверку выполнил']}
+	return names.get(key)
 
 def findFiles(cwd):
 	currentYear = dt.datetime.date.now().year
@@ -32,7 +48,7 @@ def createJournal(cwd):
 	for name in ['ДД','ДТЭ']:
 		wb.create_sheet(name)
 		activeSheet = wb.get_sheet_by_name(name)
-		activeSheet.append(hh.getHeaders(name))
+		activeSheet.append(getHeaders(name))
 	currentYear = datetime.date.now().year
 	wb.save('%s\\Сводный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear))
 	return None
