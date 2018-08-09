@@ -66,9 +66,9 @@ def clearJournal(journal):
 	wbToCopy = openpyxl.load_workbook(journal)
 	for sheet in wbToCopy.sheetnames:
 		cSheet = wbToCopy[sheet]
-		for row in cSheet.iter_rows(): #check specs for iter_rows
+		for row in cSheet.iter_rows(min_row = 2): #check specs for iter_rows
 			for cell in row:
-				cSheet.cell(row = cSheet._current_row, column = cell.col_idx, value ='')
+				cell.value = ''
 	wbToCopy.save(journal)
 
 def compileFile(jList,journal): #by cells
@@ -76,20 +76,26 @@ def compileFile(jList,journal): #by cells
 	for jItem in jList: 
 		wbFromCopy = openpyxl.load_workbook(jItem,read_only=True)
 		for sheetFromCopy in wbFromCopy.sheetnames:
-			sheetName = sheetFromCopy.title.split('_')[0]  #example : DTE_NAME
-			sheetToCopy = wbToCopy[sheetName.title] #copy cells to the same sheet in new workbook
-			for row in sheet.iter_rows(): #check specs for iter_rows
-				lastRow = sheetToCopy.max_row
+			sheetToCopy = wbToCopy[sheetFromCopy.split('_')[0]] #copy cells to the same sheet in new workbook
+			sheet = wbFromCopy[sheetFromCopy]
+			for row in sheet.iter_rows(min_row = 2): #итератор работает с индекса строки в листе. забудь про отсчет с 0
+				lastRow = sheetToCopy.max_row + 1
+				listOfCells = []
 				for cell in row:
-					newCell = sheetToCopy.cell(row = lastRow + 1 ,column = cell.col_idx, value = cell.value)
-					if cell.has_style: #get and copy cell style if it possible
-						new_cell.style.font = cell.style.font
-						new_cell.style.border = cell.style.border
-						new_cell.style.fill = cell.style.fill
-						new_cell.style.number_format = cell.style.number_format
-						new_cell.style.protection = cell.style.protection
-						new_cell.style.alignment = cell.style.alignment
-				#lastRow += 1
+					if cell.value is None:
+						pass
+					else:
+						newCell = sheetToCopy.cell(row = lastRow,column = cell.column, value = cell.value)
+						##if cell.has_style: #get and copy cell style if it possible
+						newCell.font = cell.font
+						newCell.border = cell.border
+						newCell.fill = cell.fill
+						newCell.number_format = cell.number_format
+						newCell.protection = cell.protection
+						newCell.alignment = cell.alignment
+		wbFromCopy.close()
+		wbToCopy.save(journal)
+	wbToCopy.close()
 	return None # ¯\_(ツ)_/¯
 	
 def main():
@@ -97,13 +103,13 @@ def main():
 	workDir = whatOSRun(os.getcwd()) #определяем параметры ввода пути до файла
 	stopSwitch = False
 	journalList,journalFile = findFiles(workDir)
-	#while not(stopSwitch):
-	#	clearJournal(journalFile)
-	#	compileFile(journalList,journalFile)
-	#	tt.sleep(900) #wait for 15 minutes and repeat cycle
-	#	stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
-	#tt.sleep(10)
-	#sys.exit(0)
+	while not(stopSwitch):
+		clearJournal(journalFile)
+		compileFile(journalList,journalFile)
+		tt.sleep(900) #wait for 15 minutes and repeat cycle
+		stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
+	tt.sleep(10)
+	sys.exit(0)
 	
 if __name__ == '__main__':
 	main()
