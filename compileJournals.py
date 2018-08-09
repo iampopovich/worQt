@@ -19,28 +19,28 @@ def whatOSRun(path):
 		return '%s\\' %path
 	else:
 		return '%s/' %path
+
 def getHeaders(key):
 	names = {'ДД':['Директивный документ','Этап контроля','Обозначение ДД',
 					'Размещение ДД в структуре папок ОКБ','Процедура выпуска',
 					'Оформление ДД','Соответствие ДД модели данных',
 					'Модуль создания ДД','Применяемость','Указание о внедрении/заделе',
 					'Согласовано','Примечание','Дата','Проверку выполнил'],
-			'ДТЭ':['Обозначение КД\\Ревизия-Наименование',
+			'ДТЭ':['Обозначение КД / Ревизия-Наименование',
 					'Тип объекта','Владелец','Подразделение','Обозначение ДД',
-					'Этап контроля','Обозначение \\ Процедура выпуска',
-					'Размещение в структуре папок ОКБ\nВходимость в головную сборку\\проект',
-					'Соответствие модели данных\\Время сохранения',
-					'Оформление\\Состав ЭМ','Ограничения\\WAVE-связи','Масса\\Материал\\Атрибуты',
-					'Геометрия\\Допуски','Слои\\Ссылочные наборы','Анализ зазоров','Согласовано'
+					'Этап контроля','Обозначение / Процедура выпуска',
+					'Размещение в структуре папок ОКБ\nВходимость в головную сборку / проект',
+					'Соответствие модели данных / Время сохранения',
+					'Оформление / Состав ЭМ','Ограничения / WAVE-связи','Масса / Материал / Атрибуты',
+					'Геометрия / Допуски','Слои / Ссылочные наборы','Анализ зазоров','Согласовано'
 					'Документ на отклонение от требований НД','Дата','Проверку выполнил']}
 	return names.get(key)
-
 
 def findFiles(cwd):
 	currentYear = dt.datetime.now().year
 	xlFiles = [path.join(cwd, f) for f in os.listdir(cwd) if path.isfile(path.join(cwd, f))] #сеим директории, оставляем файлы
 	try:	#этих файлов может и не быть , на всякий случай расставь экспы
-		cJournalName = '%s/Сводный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear)
+		cJournalName = '%sСводный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear)
 		if cJournalName in xlFiles:
 			xlFiles.pop(xlFiles.index(cJournalName))
 		else:
@@ -54,28 +54,30 @@ def findFiles(cwd):
 
 def createJournal(name):
 	wb = openpyxl.Workbook()
+	wb.remove(wb.active)
 	for sheetName in ['ДД','ДТЭ']:
 		wb.create_sheet(sheetName)
-		activeSheet = wb.get_sheet_by_name(sheetName)
+		activeSheet = wb[sheetName]
 		activeSheet.append(getHeaders(sheetName))
 	wb.save('%s' %(name))
 	return None
 	
-def compileFile(jList,journal,cwd): #by cells
+def clearJournal(journal):
 	wbToCopy = openpyxl.load_workbook(journal)
-	#####clear compiled book
 	for sheet in wbToCopy.sheetnames:
-		cSheet = wbToCopy.get_sheet_by_name(sheet)
+		cSheet = wbToCopy[sheet]
 		for row in cSheet.iter_rows(): #check specs for iter_rows
 			for cell in row:
 				cSheet.cell(row = cSheet._current_row, column = cell.col_idx, value ='')
-	print('HHHHHHHHHHHHHHHHHHUUUUUUUUURRRRRRRRRRRAAAAAAAAAAAHHHHHHHHHHH')
-	#############
+	wbToCopy.save(journal)
+
+def compileFile(jList,journal): #by cells
+	wbToCopy = openpyxl.load_workbook(journal)
 	for jItem in jList: 
 		wbFromCopy = openpyxl.load_workbook(jItem,read_only=True)
 		for sheetFromCopy in wbFromCopy.sheetnames:
 			sheetName = sheetFromCopy.title.split('_')[0]  #example : DTE_NAME
-			sheetToCopy = wbToCopy.get_sheet_by_name(sheetName.title) #copy cells to the same sheet in new workbook
+			sheetToCopy = wbToCopy[sheetName.title] #copy cells to the same sheet in new workbook
 			for row in sheet.iter_rows(): #check specs for iter_rows
 				lastRow = sheetToCopy.max_row
 				for cell in row:
@@ -92,15 +94,16 @@ def compileFile(jList,journal,cwd): #by cells
 	
 def main():
 	tStart = dt.datetime.now().hour
-	workDir = whatOSRun(os.getcwd())
+	workDir = whatOSRun(os.getcwd()) #определяем параметры ввода пути до файла
 	stopSwitch = False
 	journalList,journalFile = findFiles(workDir)
-	while not(stopSwitch):
-		compileFile(journalList,journalFile,workDir)
-		tt.sleep(900) #wait for 15 minutes and repeat cycle
-		stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
-	tt.sleep(10)
-	sys.exit(0)
+	#while not(stopSwitch):
+	#	clearJournal(journalFile)
+	#	compileFile(journalList,journalFile)
+	#	tt.sleep(900) #wait for 15 minutes and repeat cycle
+	#	stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
+	#tt.sleep(10)
+	#sys.exit(0)
 	
 if __name__ == '__main__':
 	main()
