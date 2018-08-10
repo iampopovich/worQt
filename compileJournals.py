@@ -38,9 +38,10 @@ def getHeaders(key):
 
 def findFiles(cwd):
 	currentYear = dt.datetime.now().year
-	xlFiles = [path.join(cwd, f) for f in os.listdir(cwd) if path.isfile(path.join(cwd, f))] #сеим директории, оставляем файлы
+	files = [path.join(cwd, f) for f in os.listdir(cwd) if path.isfile(path.join(cwd, f))] #сеим директории, оставляем файлы
 	try:	#этих файлов может и не быть , на всякий случай расставь экспы
 		cJournalName = '%sСводный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear)
+		xlFiles = [item for item in files if '.xlsm' in item]
 		if cJournalName in xlFiles:
 			xlFiles.pop(xlFiles.index(cJournalName))
 		else:
@@ -68,33 +69,34 @@ def clearJournal(journal):
 		cSheet = wbToCopy[sheet]
 		for row in cSheet.iter_rows(min_row = 2): #check specs for iter_rows
 			for cell in row:
-				cell.value = ''
+				cell.value = None
 	wbToCopy.save(journal)
 
 def compileFile(jList,journal): #by cells
 	wbToCopy = openpyxl.load_workbook(journal)
+	tempLastRow = {'ДД':2,'ДТЭ':2} 
 	for jItem in jList: 
 		wbFromCopy = openpyxl.load_workbook(jItem,read_only=True)
 		for sheetFromCopy in wbFromCopy.sheetnames:
 			sheetToCopy = wbToCopy[sheetFromCopy.split('_')[0]] #copy cells to the same sheet in new workbook
 			sheet = wbFromCopy[sheetFromCopy]
 			for row in sheet.iter_rows(min_row = 2): #итератор работает с индекса строки в листе. забудь про отсчет с 0
-				lastRow = sheetToCopy.max_row + 1
-				listOfCells = []
+				lastRow = tempLastRow[sheetFromCopy.split('_')[0]]#sheetToCopy.max_row + 1 #вот здесь косяк с определением последней строки в листе
 				for cell in row:
-					if cell.value is None:
+					if cell.value is None: #вот здесь мы и прокалываемся. потому что заполняем старый вассив значениями None
 						pass
 					else:
 						newCell = sheetToCopy.cell(row = lastRow,column = cell.column, value = cell.value)
-						##if cell.has_style: #get and copy cell style if it possible
 						newCell.font = cell.font
 						newCell.border = cell.border
 						newCell.fill = cell.fill
 						newCell.number_format = cell.number_format
 						newCell.protection = cell.protection
 						newCell.alignment = cell.alignment
+				tempLastRow[sheetFromCopy.split('_')[0]]+=1 #sheetFromCopy.split('_')[0] - заменить на переменную мб?
 		wbFromCopy.close()
 		wbToCopy.save(journal)
+
 	wbToCopy.close()
 	return None # ¯\_(ツ)_/¯
 	
@@ -104,11 +106,13 @@ def main():
 	stopSwitch = False
 	journalList,journalFile = findFiles(workDir)
 	while not(stopSwitch):
+		print('start')
 		clearJournal(journalFile)
 		compileFile(journalList,journalFile)
-		tt.sleep(900) #wait for 15 minutes and repeat cycle
-		stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
-	tt.sleep(10)
+		print('waiting for 10 seconds')
+		tt.sleep(10)
+		#wait for 15 minutes and repeat cycle
+		#stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
 	sys.exit(0)
 	
 if __name__ == '__main__':
