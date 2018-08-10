@@ -8,6 +8,7 @@ import re
 import os
 from os import path
 import sys
+import lib_headers as hh
 '''
 def findFiles(cwd):
 def createJournal(cwd):
@@ -19,22 +20,6 @@ def whatOSRun(path):
 		return '%s\\' %path
 	else:
 		return '%s/' %path
-
-def getHeaders(key):
-	names = {'ДД':['Директивный документ','Этап контроля','Обозначение ДД',
-					'Размещение ДД в структуре папок ОКБ','Процедура выпуска',
-					'Оформление ДД','Соответствие ДД модели данных',
-					'Модуль создания ДД','Применяемость','Указание о внедрении/заделе',
-					'Согласовано','Примечание','Дата','Проверку выполнил'],
-			'ДТЭ':['Обозначение КД / Ревизия-Наименование',
-					'Тип объекта','Владелец','Подразделение','Обозначение ДД',
-					'Этап контроля','Обозначение / Процедура выпуска',
-					'Размещение в структуре папок ОКБ\nВходимость в головную сборку / проект',
-					'Соответствие модели данных / Время сохранения',
-					'Оформление / Состав ЭМ','Ограничения / WAVE-связи','Масса / Материал / Атрибуты',
-					'Геометрия / Допуски','Слои / Ссылочные наборы','Анализ зазоров','Согласовано'
-					'Документ на отклонение от требований НД','Дата','Проверку выполнил']}
-	return names.get(key)
 
 def findFiles(cwd):
 	currentYear = dt.datetime.now().year
@@ -59,7 +44,7 @@ def createJournal(name):
 	for sheetName in ['ДД','ДТЭ']:
 		wb.create_sheet(sheetName)
 		activeSheet = wb[sheetName]
-		activeSheet.append(getHeaders(sheetName))
+		activeSheet.append(hh.getHeaders(sheetName))
 	wb.save('%s' %(name))
 	return None
 	
@@ -80,10 +65,10 @@ def compileFile(jList,journal): #by cells
 		for sheetFromCopy in wbFromCopy.sheetnames:
 			sheetToCopy = wbToCopy[sheetFromCopy.split('_')[0]] #copy cells to the same sheet in new workbook
 			sheet = wbFromCopy[sheetFromCopy]
-			for row in sheet.iter_rows(min_row = 2): #итератор работает с индекса строки в листе. забудь про отсчет с 0
-				lastRow = tempLastRow[sheetFromCopy.split('_')[0]]#sheetToCopy.max_row + 1 #вот здесь косяк с определением последней строки в листе
+			for row in sheet.iter_rows(min_row = 2):
+				lastRow = tempLastRow[sheetFromCopy.split('_')[0]]
 				for cell in row:
-					if cell.value is None: #вот здесь мы и прокалываемся. потому что заполняем старый вассив значениями None
+					if cell.value is None:
 						pass
 					else:
 						newCell = sheetToCopy.cell(row = lastRow,column = cell.column, value = cell.value)
