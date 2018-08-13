@@ -25,7 +25,7 @@ def findFiles(cwd):
 	currentYear = dt.datetime.now().year
 	files = [path.join(cwd, f) for f in os.listdir(cwd) if path.isfile(path.join(cwd, f))] #сеим директории, оставляем файлы
 	try:	#этих файлов может и не быть , на всякий случай расставь экспы
-		cJournalName = '%sСводный_журнал_ДТЭ_%s.xlsm' %(cwd,currentYear)
+		cJournalName = '%sСводный_журнал_ДТЭ_%s.xlsx' %(cwd,currentYear)
 		xlFiles = [item for item in files if '.xlsm' in item]
 		if cJournalName in xlFiles:
 			xlFiles.pop(xlFiles.index(cJournalName))
