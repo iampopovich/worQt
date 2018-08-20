@@ -27,7 +27,12 @@ def findFiles(cwd):
 		cJournalName = '%sСводный_журнал_ДТЭ_%s.xlsx' %(cwd,currentYear)
 		if cJournalName in files: files.pop(files.index(cJournalName))
 		else: createJournal(cJournalName)
-		xlFiles = [item for item in files if not(re.search(r'.*\sДТЭ\s.*%s.*xlsm' %currentYear, item) is None)]
+		xlFiles = [item for item in files if not(re.search(r'.*\sДТЭ\s.*%s.*xlsm' %currentYear, item) is None) and not('$' in item)] # дичь дважды - экранировать доллар научись 
+		#for item in files:
+		#	if re.search(r'.*\sДТЭ\s.*%s.*xlsm' %currentYear, item) is None: continue
+		#	else: 
+		#		if '$' in item : continue
+		#		else: xlFiles.append(item) 
 		return xlFiles,cJournalName
 	except Exception as ex:
 		print('findFiles failed with: %s' %ex)
@@ -41,22 +46,34 @@ def createJournal(name):
 			wb.create_sheet(sheetName)
 			activeSheet = wb[sheetName]
 			activeSheet.append(hh.getHeaders(sheetName))
-			#activeSheet.auto_filter.ref = 
-			for cell in list(activeSheet.rows)[0]:
-				if sheetName == 'ДД':
-					cell.style = 'Input'
-					border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
-                     						right=openpyxl.styles.Side(style='thin'),
-                     						top=openpyxl.styles.Side(style='thin'),
-                     						bottom=openpyxl.styles.Side(style='thin'))
-					cell.border = border
-				else:
-					cell.style = 'Accent5'
-					border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
-                     						right=openpyxl.styles.Side(style='thin'),
-                     						top=openpyxl.styles.Side(style='thin'),
-                     						bottom=openpyxl.styles.Side(style='thin'))
-					cell.border = border
+			#полностью нерабочий участок######activeSheet.auto_filter.ref = activeSheet.columns
+			#полностью нерабочий участок######for cell in list(activeSheet.rows)[0]:
+			#полностью нерабочий участок######	horizontal = 'center'
+			#полностью нерабочий участок######	vertical = 'justify'
+			#полностью нерабочий участок######	if sheetName == 'ДД':
+			#полностью нерабочий участок######		cell.style = 'Input'
+			#полностью нерабочий участок######		cell.alignment = openpyxl.styles.Alignment(horizontal=horizontal, 
+			#полностью нерабочий участок######													vertical=vertical, 
+			#полностью нерабочий участок######													wrap_text=True,
+			#полностью нерабочий участок######													shrink_to_fit=False, 
+			#полностью нерабочий участок######													indent=0)
+			#полностью нерабочий участок######		border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
+            #полностью нерабочий участок######         						right=openpyxl.styles.Side(style='thin'),
+            #полностью нерабочий участок######         						top=openpyxl.styles.Side(style='thin'),
+            #полностью нерабочий участок######         						bottom=openpyxl.styles.Side(style='thin'))
+			#полностью нерабочий участок######		cell.border = border
+			#полностью нерабочий участок######	else:
+			#полностью нерабочий участок######		cell.style = 'Accent5'
+			#полностью нерабочий участок######		cell.alignment = openpyxl.styles.Alignment(horizontal=horizontal, 
+			#полностью нерабочий участок######													vertical=vertical, 
+			#полностью нерабочий участок######													wrap_text=True,
+			#полностью нерабочий участок######													shrink_to_fit=False, 
+			#полностью нерабочий участок######													indent=0)
+			#полностью нерабочий участок######		border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
+            #полностью нерабочий участок######         						right=openpyxl.styles.Side(style='thin'),
+            #полностью нерабочий участок######         						top=openpyxl.styles.Side(style='thin'),
+            #полностью нерабочий участок######         						bottom=openpyxl.styles.Side(style='thin'))
+			#полностью нерабочий участок######		cell.border = border
 		wb.save('%s' %(name))
 		return None
 	except Exception as ex:
@@ -97,9 +114,6 @@ def compileFile(jList,journal): #by cells
                      						top=openpyxl.styles.Side(style='thin'),
                      						bottom=openpyxl.styles.Side(style='thin'))
 						newCell.border = border
-						#newCell.border = cell.border
-						#bgCLR = openpyxl.styles.colors.Color(rgb='00c6efce')
-						#newCell.fill = openpyxl.styles.fills.PatternFill(patternType='solid', fgColor=bgCLR)
 					else:
 						isEmptyRow = False 
 						newCell = sheetToCopy.cell(row = lastRow,column = cell.column, value = cell.value)
@@ -127,7 +141,7 @@ def main():
 		compileFile(journalList,journalFile)
 		print('waiting for 10 seconds')
 		print(dt.datetime.now() - tStart)
-		sys.exit(0) # пока выходит после сборки 
+		#sys.exit(0) # пока выходит после сборки 
 		#wait for 15 minutes and repeat cycle
 		#stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
 
