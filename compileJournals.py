@@ -63,14 +63,22 @@ def compileFile(jList,journal): #by cells
 	for jItem in jList: 
 		wbFromCopy = openpyxl.load_workbook(jItem,read_only=True)
 		for sheetFromCopy in wbFromCopy.sheetnames:
-			sheetToCopy = wbToCopy[sheetFromCopy.split('_')[0]] #copy cells to the same sheet in new workbook
-			sheet = wbFromCopy[sheetFromCopy]
+			try:
+				sheetToCopy = wbToCopy[sheetFromCopy.split('_')[0]] #copy cells to the same sheet in new workbook
+				sheet = wbFromCopy[sheetFromCopy]
+			except:	continue
 			for row in sheet.iter_rows(min_row = 2):
+				isEmptyRow = True
 				lastRow = tempLastRow[sheetFromCopy.split('_')[0]]
-				for cell in row:
-					if cell.value is None:
-						pass
+				for iCell,cell in enumerate(row):
+					if (cell.value is None):
+						if iCell in range(2,13):
+							newCell = sheetToCopy.cell(row = lastRow,column = iCell+1, value = ' ')
+							newCell.border = cell.border
+							bgCLR = openpyxl.styles.colors.Color(rgb='00c6efce')
+							newCell.fill = openpyxl.styles.fills.PatternFill(patternType='solid', fgColor=bgCLR)
 					else:
+						isEmptyRow = False 
 						newCell = sheetToCopy.cell(row = lastRow,column = cell.column, value = cell.value)
 						newCell.font = cell.font
 						newCell.border = cell.border
@@ -78,7 +86,8 @@ def compileFile(jList,journal): #by cells
 						newCell.number_format = cell.number_format
 						newCell.protection = cell.protection
 						newCell.alignment = cell.alignment
-				tempLastRow[sheetFromCopy.split('_')[0]]+=1 #sheetFromCopy.split('_')[0] - заменить на переменную мб?
+				if isEmptyRow:	continue
+				else: tempLastRow[sheetFromCopy.split('_')[0]]+=1
 		wbFromCopy.close()
 		wbToCopy.save(journal)
 
@@ -92,10 +101,11 @@ def main():
 	journalList,journalFile = findFiles(workDir)
 	while not(stopSwitch):
 		print('start')
-		clearJournal(journalFile)
+		#clearJournal(journalFile)
 		compileFile(journalList,journalFile)
 		print('waiting for 10 seconds')
 		tt.sleep(10)
+		sys.exit(0) # пока выходит после сборки 
 		#wait for 15 minutes and repeat cycle
 		#stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
 	sys.exit(0)
