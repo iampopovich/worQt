@@ -1,20 +1,13 @@
 #!/usr/bin/pythom
 #-*-coding: utf-8-*-
-#import math
 import openpyxl
 import time as tt
 import datetime as dt
 import re
 import os
-#from os import path
 import sys
 import lib_headers as hh
-'''
-def findFiles(cwd):
-def createJournal(cwd):
-def compileFile(jList,config,journal,cwd):
-def readWriteConfig(conf,mode,dict = None):
-'''
+
 def whatOSRun(path):
 	if os.name.endswith('nt'):
 		return '%s\\' %path
@@ -23,11 +16,11 @@ def whatOSRun(path):
 def findFiles(cwd):
 	currentYear = dt.datetime.now().year
 	files = [os.path.join(cwd, f) for f in os.listdir(cwd) if os.path.isfile(os.path.join(cwd, f))]
-	try:	#этих файлов может и не быть , на всякий случай расставь экспы
+	try:
 		cJournalName = '%sСводный_журнал_ДТЭ_%s.xlsx' %(cwd,currentYear)
 		if cJournalName in files: files.pop(files.index(cJournalName))
 		else: createJournal(cJournalName)
-		xlFiles = [item for item in files if not(re.search(r'.*\sДТЭ\s.*%s.*xlsm' %currentYear, item) is None) and not('$' in item)] # дичь дважды - экранировать доллар научись 
+		xlFiles = [item for item in files if not(re.search(r'.*\sДТЭ\s.*%s.*xlsm' %currentYear, item) is None) and not('$' in item)]
 		return xlFiles,cJournalName
 	except Exception as ex:
 		print('findFiles failed with: %s' %ex)
@@ -43,13 +36,10 @@ def createJournal(name):
 			activeSheet.append(hh.getHeaders(sheetName))
 			for item in activeSheet.columns:
 				activeSheet.column_dimensions['%s' %item[0].column].width = 16.0
-			#activeSheet.auto_filter.ref = 
 			for cell in list(activeSheet.rows)[0]:
-				horizontal = 'center'
-				vertical = 'center'
 				cell.style = 'Input'
-				cell.alignment = openpyxl.styles.Alignment(horizontal=horizontal, 
-																vertical=vertical, 
+				cell.alignment = openpyxl.styles.Alignment(horizontal = 'center', 
+																vertical = 'center', 
 																wrap_text=True)
 		wb.save('%s' %(name))
 		return None
@@ -57,13 +47,17 @@ def createJournal(name):
 		return ('createJournal failed with: %s' %ex)
 
 def clearJournal(journal):
-	wbToCopy = openpyxl.load_workbook(journal)
-	for sheet in wbToCopy.sheetnames:
-		cSheet = wbToCopy[sheet]
-		for row in cSheet.iter_rows(min_row = 2): #check specs for iter_rows
-			for cell in row:
-				cell.value = None
-	wbToCopy.save(journal)
+	try:
+		wbToCopy = openpyxl.load_workbook(journal)
+		for sheet in wbToCopy.worksheets:
+			for row in sheet.iter_rows(min_row = 2):
+				for cell in row:
+					cell.value = None
+					cell.style = 'Normal'
+		wbToCopy.save(journal)
+		return None
+	except Exception as ex:
+		return ('clearJournal failed with: %s' %ex)
 
 def compileFile(jList,journal): #by cells
 	try:
@@ -84,21 +78,21 @@ def compileFile(jList,journal): #by cells
 				lastRow = tempLastRow[subname]
 				for iCell,cell in enumerate(row):
 					if (cell.value is None):
-						newCell = sheetToCopy.cell(row = lastRow,column = iCell+1, value = ' ')
-						newCell.style = 'Good'
+						toCopyCell = sheetToCopy.cell(row = lastRow,column = iCell+1, value = ' ')
+						toCopyCell.style = 'Good'
 						border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
                      						right=openpyxl.styles.Side(style='thin'),
                      						top=openpyxl.styles.Side(style='thin'),
                      						bottom=openpyxl.styles.Side(style='thin'))
-						newCell.border = border
+						toCopyCell.border = border
 					else:
 						isEmptyRow = False 
-						newCell = sheetToCopy.cell(row = lastRow,column = cell.column, value = cell.value)
-						newCell.font = cell.font
-						newCell.border = cell.border
-						newCell.fill = cell.fill
-						newCell.number_format = cell.number_format
-						newCell.alignment = cell.alignment
+						toCopyCell = sheetToCopy.cell(row = lastRow,column = cell.column, value = cell.value)
+						toCopyCell.font = cell.font
+						toCopyCell.border = cell.border
+						toCopyCell.fill = cell.fill
+						toCopyCell.number_format = cell.number_format
+						toCopyCell.alignment = cell.alignment
 				if isEmptyRow:	continue
 				else: tempLastRow[subname]+=1
 			sheetToCopy.auto_filter.ref = sheetToCopy.calculate_dimension()
@@ -109,17 +103,20 @@ def compileFile(jList,journal): #by cells
 	return None # ¯\_(ツ)_/¯
 	
 def main():
-	tStart = dt.datetime.now()
 	workDir = whatOSRun(os.getcwd()) #определяем параметры ввода пути до файла
-	stopSwitch = False
 	journalList,journalFile = findFiles(workDir) 
+	clearJournal(journalFile)
+	compileFile(journalList,journalFile)
+	'''при сохранении журнала не устанавливается флаг группового доступа
+	tStart = dt.datetime.now()
+	stopSwitch = False
 	while not(stopSwitch):
-		print('start')
-		#clearJournal(journalFile)
+		clearJournal(journalFile)
 		compileFile(journalList,journalFile)
 		print('waiting for 30 minutes')
-		tt.sleep(1800) 
+		tt.sleep(1800)
 		stopSwitch = ((dt.datetime.now().hour - tStart.hour) > 9)
+	'''
 	sys.exit(0)
 	
 if __name__ == '__main__':
