@@ -28,11 +28,6 @@ def findFiles(cwd):
 		if cJournalName in files: files.pop(files.index(cJournalName))
 		else: createJournal(cJournalName)
 		xlFiles = [item for item in files if not(re.search(r'.*\sДТЭ\s.*%s.*xlsm' %currentYear, item) is None) and not('$' in item)] # дичь дважды - экранировать доллар научись 
-		#for item in files:
-		#	if re.search(r'.*\sДТЭ\s.*%s.*xlsm' %currentYear, item) is None: continue
-		#	else: 
-		#		if '$' in item : continue
-		#		else: xlFiles.append(item) 
 		return xlFiles,cJournalName
 	except Exception as ex:
 		print('findFiles failed with: %s' %ex)
@@ -46,39 +41,21 @@ def createJournal(name):
 			wb.create_sheet(sheetName)
 			activeSheet = wb[sheetName]
 			activeSheet.append(hh.getHeaders(sheetName))
-			#полностью нерабочий участок######activeSheet.auto_filter.ref = activeSheet.columns
-			#полностью нерабочий участок######for cell in list(activeSheet.rows)[0]:
-			#полностью нерабочий участок######	horizontal = 'center'
-			#полностью нерабочий участок######	vertical = 'justify'
-			#полностью нерабочий участок######	if sheetName == 'ДД':
-			#полностью нерабочий участок######		cell.style = 'Input'
-			#полностью нерабочий участок######		cell.alignment = openpyxl.styles.Alignment(horizontal=horizontal, 
-			#полностью нерабочий участок######													vertical=vertical, 
-			#полностью нерабочий участок######													wrap_text=True,
-			#полностью нерабочий участок######													shrink_to_fit=False, 
-			#полностью нерабочий участок######													indent=0)
-			#полностью нерабочий участок######		border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
-            #полностью нерабочий участок######         						right=openpyxl.styles.Side(style='thin'),
-            #полностью нерабочий участок######         						top=openpyxl.styles.Side(style='thin'),
-            #полностью нерабочий участок######         						bottom=openpyxl.styles.Side(style='thin'))
-			#полностью нерабочий участок######		cell.border = border
-			#полностью нерабочий участок######	else:
-			#полностью нерабочий участок######		cell.style = 'Accent5'
-			#полностью нерабочий участок######		cell.alignment = openpyxl.styles.Alignment(horizontal=horizontal, 
-			#полностью нерабочий участок######													vertical=vertical, 
-			#полностью нерабочий участок######													wrap_text=True,
-			#полностью нерабочий участок######													shrink_to_fit=False, 
-			#полностью нерабочий участок######													indent=0)
-			#полностью нерабочий участок######		border = openpyxl.styles.Border(left=openpyxl.styles.Side(style='thin'),
-            #полностью нерабочий участок######         						right=openpyxl.styles.Side(style='thin'),
-            #полностью нерабочий участок######         						top=openpyxl.styles.Side(style='thin'),
-            #полностью нерабочий участок######         						bottom=openpyxl.styles.Side(style='thin'))
-			#полностью нерабочий участок######		cell.border = border
+			for item in activeSheet.columns:
+				activeSheet.column_dimensions['%s' %item[0].column].width = 16.0
+			#activeSheet.auto_filter.ref = 
+			for cell in list(activeSheet.rows)[0]:
+				horizontal = 'center'
+				vertical = 'center'
+				cell.style = 'Input'
+				cell.alignment = openpyxl.styles.Alignment(horizontal=horizontal, 
+																vertical=vertical, 
+																wrap_text=True)
 		wb.save('%s' %(name))
 		return None
 	except Exception as ex:
 		return ('createJournal failed with: %s' %ex)
-	
+
 def clearJournal(journal):
 	wbToCopy = openpyxl.load_workbook(journal)
 	for sheet in wbToCopy.sheetnames:
@@ -124,6 +101,7 @@ def compileFile(jList,journal): #by cells
 						newCell.alignment = cell.alignment
 				if isEmptyRow:	continue
 				else: tempLastRow[subname]+=1
+			sheetToCopy.auto_filter.ref = sheetToCopy.calculate_dimension()
 		wbFromCopy.close()
 		del wbFromCopy, sheetFromCopy 
 		wbToCopy.save(journal)
@@ -131,20 +109,17 @@ def compileFile(jList,journal): #by cells
 	return None # ¯\_(ツ)_/¯
 	
 def main():
-	tStart = dt.datetime.now()#.hour
+	tStart = dt.datetime.now()
 	workDir = whatOSRun(os.getcwd()) #определяем параметры ввода пути до файла
 	stopSwitch = False
-	journalList,journalFile = findFiles(workDir)
+	journalList,journalFile = findFiles(workDir) 
 	while not(stopSwitch):
 		print('start')
 		#clearJournal(journalFile)
 		compileFile(journalList,journalFile)
-		print('waiting for 10 seconds')
-		print(dt.datetime.now() - tStart)
-		#sys.exit(0) # пока выходит после сборки 
-		#wait for 15 minutes and repeat cycle
-		#stopSwitch = ((dt.datetime.now().hour - tStart) > 9)
-
+		print('waiting for 30 minutes')
+		tt.sleep(1800) 
+		stopSwitch = ((dt.datetime.now().hour - tStart.hour) > 9)
 	sys.exit(0)
 	
 if __name__ == '__main__':
