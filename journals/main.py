@@ -1,4 +1,4 @@
-#-*-coding^ utf-8-*-
+#-*-coding: utf-8-*-
 import time as tt
 def main():
 	print(1)
