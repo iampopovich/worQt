@@ -34,9 +34,11 @@ class techReqsApp:
 		self.appendButton.grid(row = 1, column = 0, sticky = 'wens')
 		self.tree.bind("<Double-1>", lambda x: self.appendNewLine(self,"<Double-1>"))
 		
-		self.right_listBox = Listbox(self.frame_right, height = 18, width = 50)
+		self.right_listBox = Listbox(self.frame_right, height = 18, width = 50, bd = 3)
 		self.right_listBox.grid(row = 0, column = 0, sticky = 'wens')
-		self.right_listBox.bind("<Double-1>", lambda x: self.editCurrentLine(self, "<Double-1>"))
+		self.right_listBox.bind("<Double-1>", self.editCurrentLine)
+		self.right_listBox.bind('<Button-1>', self.setCurrent)
+		self.right_listBox.bind('<B1-Motion>', self.shiftSelection)
 
 		self.commitButton = Button(self.frame_right, text = 'создать ТТ')
 		self.commitButton.grid(row = 1, column = 0, sticky = 'wens')
@@ -48,9 +50,31 @@ class techReqsApp:
 	#	self.right_listBox
 	#	self.right_listBox
 	#	pass
+	def setCurrent(self, event):
+		self.right_listBox.curIndex = self.right_listBox.nearest(event.y)
+
+	def shiftSelection(self, event):
+		i = self.right_listBox.nearest(event.y)
+		if i < self.right_listBox.curIndex:
+			x = self.right_listBox.get(i)
+			self.right_listBox.delete(i)
+			self.right_listBox.insert(i+1, x)
+			self.right_listBox.curIndex = i
+		elif i > self.right_listBox.curIndex:
+			x = self.right_listBox.get(i)
+			#x= x.replace(re.match(r'[0-9]{1,3}.|[,.;\'~!@\#$%^&*()_+"]',x).group(0),str(i-1))
+			self.right_listBox.delete(i)
+			self.right_listBox.insert(i-1, x)
+			self.right_listBox.curIndex = i
 
 	def commitLine(self,master):
 		text = self.mid_textBox.get("1.0",'end-1c')
+		try:
+			text = text.replace(re.match(r'[0-9]{1,3}.|[,.;\'~!@\#$%^&*()_+"]',text).group(0),'')
+			#print(re.match(r'[0-9]{1,3}.|[,.;\'~!@\#$%^&*()_+"]',text).group(0))
+		except: pass
+		lastIndex = self.right_listBox.size()
+		text = str(lastIndex+1)+'. ' + text
 		self.right_listBox.insert(END,text)
 		self.mid_textBox.delete('1.0', END)
 
@@ -68,7 +92,7 @@ class techReqsApp:
 		item = self.tree.selection()[0]
 		self.mid_textBox.insert(END,("you clicked on", self.tree.item(item,"text")))
 
-	def editCurrentLine(self, master,event):
+	def editCurrentLine(self,event):
 		self.mid_textBox.delete('1.0', END)
 		index = self.right_listBox.curselection()[0]
 		value = self.right_listBox.get(index)
