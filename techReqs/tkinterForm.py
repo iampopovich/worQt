@@ -98,15 +98,16 @@ class techReqsApp:
 
 	def recalculateParagraphs(self, master):
 		for index in range(self.right_listBox.size()):
-			text = self.right_listBox.get(i)
+			text = self.right_listBox.get(index)
 			try:
-				text = text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1}',text).group(0),str(index+1)+'. ')
+				text = str(index+1)+'. ' + text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1}',text).group(0),'')
 			except: pass
 			self.right_listBox.delete(index)
 			self.right_listBox.insert(index,text)
 
 	def editCurrentLine(self,event):
 		self.commitEditedButton.config(state = NORMAL)
+		self.appendButton.config(state = DISABLED)
 		self.mid_textBox.delete('1.0', END)
 		index = self.right_listBox.curselection()[0]
 		text = self.right_listBox.get(index)
@@ -117,10 +118,11 @@ class techReqsApp:
 	
 	def commitEditedParagraph(self,mastrer):
 		self.commitEditedButton.config(state = DISABLED)
+		self.appendButton.config(state = NORMAL)
 		index = self.right_listBox.curselection()[0]
 		text = self.mid_textBox.get("1.0",'end-1c')
 		try:
-			text = text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),str(index+1)+'. ')
+			text = str(index+1)+'. ' + text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'')
 		except: text = str(index+1)+'. ' + text 
 		self.mid_textBox.delete('1.0', END)
 		self.right_listBox.delete(index)
