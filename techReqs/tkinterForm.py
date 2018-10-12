@@ -38,7 +38,7 @@ class techReqsApp:
 		self.commitEditedButton.config(state = DISABLED)
 		self.removeSelectedButton = Button(self.frame_mid, text = 'удалить пункт ТТ', command = lambda: self.removeCurrentSelection(self))
 		self.removeSelectedButton.grid(row = 1, column = 2, sticky = 'wens')
-		#self.removeSelectedButton.config(state=DISABLED)
+		#self.removeSelectedButton.config(state=DISABLED) #see also listener definition at the bottom
 		self.removeSelectedButton.config(state = NORMAL)
 		
 		self.frame_midSubSub = Frame(self.frame_midSub)
@@ -145,20 +145,21 @@ class techReqsApp:
 			self.commitEditedButton.config(state = NORMAL)
 			self.appendButton.config(state = DISABLED)
 
-	def removeCurrentSelection(self, master): #доделать до удаления листа пунктов
+	def removeCurrentSelection(self, master): 
 		list_index = self.midSub_listBox.curselection()
 		if len(list_index)!=0:
-			list_temp = [self.midSub_listBox.get(i) for i in range(0,self.midSub_listBox.size()-1) if not(i in list_index)]
+			list_temp = [self.midSub_listBox.get(imdex) for index in range(0,self.midSub_listBox.size()-1) if not(index in list_index)]
 			self.midSub_listBox.delete(0,END)
 			[self.midSub_listBox.insert(END, item) for item in list_temp]
 			self.recalculateParagraphs(self)
 		else: pass
-		
+
 	###experimental unworked feture
-	#def activeListener(self, master):
-	#	if len(self.midSub_listBox.curselection())!=0:
-	#		self.removeSelectedButton.config(state=NORMAL)
-	#	else: self.removeSelectedButton.config(state=DISABLED)
+	def activeListener(self, master):
+		if len(self.midSub_listBox.curselection())!=0:
+			self.removeSelectedButton.config(state=NORMAL)
+		else: self.removeSelectedButton.config(state=DISABLED)
+		self.activeListener(self) 
 
 	def loadFont():
 		fontPath = '%s\\GOST_Type_A.ttf' %os.path.dirname(os.path.realpath(__file__))
@@ -169,6 +170,7 @@ def main():
 	root = Tk()
 	frame = techReqsApp(root)
 	frame.fillTree(root)
+	#root.after(1000, frame.activeListener(root))
 	root.mainloop()
 
 
