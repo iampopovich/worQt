@@ -35,11 +35,12 @@ class techReqsApp:
 		self.appendButton.grid(row = 1, column = 0, sticky = 'wens')
 		self.commitEditedButton = Button(self.frame_mid, text = 'изменить пункт ТТ', command = lambda: self.commitEditedParagraph(self))
 		self.commitEditedButton.grid(row = 1, column = 1, sticky = 'wens')
-		self.commitEditedButton.config(state=DISABLED)
+		self.commitEditedButton.config(state = DISABLED)
 		self.removeSelectedButton = Button(self.frame_mid, text = 'удалить пункт ТТ', command = lambda: self.removeCurrentSelection(self))
 		self.removeSelectedButton.grid(row = 1, column = 2, sticky = 'wens')
-		self.removeSelectedButton.config(state=DISABLED)
-
+		#self.removeSelectedButton.config(state=DISABLED)
+		self.removeSelectedButton.config(state = NORMAL)
+		
 		self.frame_midSubSub = Frame(self.frame_midSub)
 		self.frame_midSubSub.pack(side = TOP, fill = X)
 		self.vsb_listBox = Scrollbar(self.frame_midSubSub, orient = VERTICAL)
@@ -84,15 +85,15 @@ class techReqsApp:
 		self.recalculateParagraphs(self)
 
 	def appendLine(self,master):
-		text = self.mid_textBox.get("1.0",'end-1c')
+		text = self.mid_textBox.get("1.0",'end-1c') #получаем содержимое поля ввода текста
 		try:
-			text = text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'')
+			text = text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'') #стрипаем введенный разрабом порядковый номер, если он есть
 		except: pass
-		lastIndex = self.midSub_listBox.size()
-		text = str(lastIndex+1)+'. ' + text
-		self.midSub_listBox.insert(END,text)
-		self.mid_textBox.delete('1.0', END)
-		self.midSub_listBox.yview_scroll(lastIndex,'units')
+		lastIndex = self.midSub_listBox.size() #получаем текущий последний пункт по порядку
+		text = str(lastIndex+1)+'. ' + text #добавляем в начало строки новенький пункт 
+		self.midSub_listBox.insert(END,text) #добавляем элемент в конец списка пунктов. мб можно будет вводить в произвольную позицию
+		self.mid_textBox.delete('1.0', END) #удаляем все содержимое поля воода
+		self.midSub_listBox.yview_scroll(lastIndex,'units') #переводит фокус на последний добавленный элемент
 
 	def fillTree(self, master):
 		for i in range(1,500):
@@ -144,11 +145,20 @@ class techReqsApp:
 			self.commitEditedButton.config(state = NORMAL)
 			self.appendButton.config(state = DISABLED)
 
-	def deleteCurrentLine():
-		pass
-	
-	def activeListener(self, master):
-		pass
+	def removeCurrentSelection(self, master): #доделать до удаления листа пунктов
+		list_index = self.midSub_listBox.curselection()
+		if len(list_index)!=0:
+			list_temp = [self.midSub_listBox.get(i) for i in range(0,self.midSub_listBox.size()-1) if not(i in list_index)]
+			self.midSub_listBox.delete(0,END)
+			[self.midSub_listBox.insert(END, item) for item in list_temp]
+			self.recalculateParagraphs(self)
+		else: pass
+		
+	###experimental unworked feture
+	#def activeListener(self, master):
+	#	if len(self.midSub_listBox.curselection())!=0:
+	#		self.removeSelectedButton.config(state=NORMAL)
+	#	else: self.removeSelectedButton.config(state=DISABLED)
 
 	def loadFont():
 		fontPath = '%s\\GOST_Type_A.ttf' %os.path.dirname(os.path.realpath(__file__))
@@ -159,7 +169,6 @@ def main():
 	root = Tk()
 	frame = techReqsApp(root)
 	frame.fillTree(root)
-	frame.activeListener(root)
 	root.mainloop()
 
 
