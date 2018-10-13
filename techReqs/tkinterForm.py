@@ -18,7 +18,7 @@ class techReqsApp:
 		self.frame_mid.grid(row = 0, column = 1, sticky = 'wens')
 		self.frame_midSub = LabelFrame(self.frame_mid, text = 'макет списка')
 		self.frame_midSub.grid(row = 2, column = 0, sticky = 'wens', columnspan = 3)
-		self.frame_right = LabelFrame(parent, text = 'макет результата')
+		self.frame_right = LabelFrame(parent, text = 'макет результата', bg= 'green')
 		self.frame_right.grid(row = 0, column = 2, sticky = 'wens')
 		self.vsb_tree = Scrollbar(self.frame_left, orient = VERTICAL)
 		self.vsb_tree.pack(side = RIGHT, fill = Y)
@@ -44,14 +44,14 @@ class techReqsApp:
 		self.removeSelectedButton.config(state = NORMAL)
 		
 		self.frame_midSubSub = Frame(self.frame_midSub)
-		self.frame_midSubSub.pack(side = TOP, fill = X)
+		self.frame_midSubSub.pack(side = TOP, fill = BOTH)
 		self.vsb_listBox = Scrollbar(self.frame_midSubSub, orient = VERTICAL)
 		self.vsb_listBox.pack(side = RIGHT, fill = Y)
 		self.hsb_listBox = Scrollbar(self.frame_midSubSub, orient = HORIZONTAL)
 		self.hsb_listBox.pack(side = BOTTOM, fill = X)		
 		self.midSub_listBox = Listbox(self.frame_midSubSub, height = 7, font = 'arial 10', selectmode = EXTENDED)
 		self.midSub_listBox.config(yscrollcommand = self.vsb_listBox.set, xscrollcommand = self.hsb_listBox.set)
-		self.midSub_listBox.pack(side = LEFT, fill = X)
+		self.midSub_listBox.pack(fill = BOTH)
 		self.hsb_listBox.config(command = self.midSub_listBox.xview)
 		self.vsb_listBox.config(command = self.midSub_listBox.yview)
 
@@ -61,8 +61,12 @@ class techReqsApp:
 		self.commitButton = Button(self.frame_midSub, text = 'создать ТТ')
 		self.commitButton.pack(side = TOP, fill = X)
 
+		self.vsb_resultCanvas = Scrollbar(self.frame_right, orient = VERTICAL)
+		self.vsb_resultCanvas.pack(side = RIGHT, fill = Y)
 		self.resultCanvas = Canvas(self.frame_right)
+		self.resultCanvas.config(yscrollcommand = self.vsb_resultCanvas.set)
 		self.resultCanvas.pack()
+		self.vsb_resultCanvas.config(command = self.resultCanvas.yview)
 		
 		#self.button_frame = LabelFrame(self.frame_left, text = 'макет панели спецсимволов')
 		#self.button_frame.grid(row = 1, column = 0)
@@ -72,6 +76,7 @@ class techReqsApp:
 	#	self.midSub_listBox
 	#	self.midSub_listBox
 	#	pass
+
 	def setCurrent(self, event):
 		self.midSub_listBox.curIndex = self.midSub_listBox.nearest(event.y)
 
@@ -105,7 +110,7 @@ class techReqsApp:
 		for i in range(1,500):
 			self.tree.insert("", i, "dir%s"%i, text="Dir %s"%i)
 			self.tree.insert("dir%s"%i, i, text=" sub dir %s" %i, values =("%sA" %i," %sB" %i))
-		
+
 	def addSymbol(text, keyval):
 		symbols = {'b1':'elem1', 
 					'b2':'elem2'}
@@ -163,11 +168,14 @@ class techReqsApp:
 			[self.midSub_listBox.insert(END, item) for item in list_temp]
 			self.recalculateParagraphs(self)
 		else: pass
+		self.refreshResult(self)
 	
 	def refreshResult(self, parent):
+		self.resultCanvas.delete('all')
+		XBASE, YBASE, DISTANCE = 10, 20, 20
 		if self.midSub_listBox.size()!= 0:
-			for item in self.midSub_listBox.get(0,END):
-				self.resultCanvas.create_text(20, 30, anchor=W, font="Purisa", text = item)
+			for i,item in enumerate(self.midSub_listBox.get(0,END)):
+				self.resultCanvas.create_text((XBASE, YBASE + i * DISTANCE), anchor = W, fill='blue', text = item)
 		pass
 
 	###experimental unworked feture
