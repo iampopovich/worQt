@@ -8,16 +8,18 @@ from tkinter import ttk
 import standardLibrary
 
 class techReqsApp:
-	def __init__(self, master):
-		self.master = master
-		self.master.resizable(False, False)
-		self.title = master.title('Noname module')
-		self.frame_left = LabelFrame(master, text = 'макет выбора1')
+	def __init__(self, parent):
+		self.parent = parent
+		self.parent.resizable(False, False)
+		self.title = parent.title('Noname module')
+		self.frame_left = LabelFrame(parent, text = 'макет выбора1')
 		self.frame_left.grid(row = 0, column = 0, sticky = 'wens')
-		self.frame_mid = LabelFrame(master, text = 'макет редактора')
+		self.frame_mid = LabelFrame(parent, text = 'макет редактора')
 		self.frame_mid.grid(row = 0, column = 1, sticky = 'wens')
-		self.frame_midSub = LabelFrame(self.frame_mid, text = 'макет результата')
+		self.frame_midSub = LabelFrame(self.frame_mid, text = 'макет списка')
 		self.frame_midSub.grid(row = 2, column = 0, sticky = 'wens', columnspan = 3)
+		self.frame_right = LabelFrame(parent, text = 'макет результата')
+		self.frame_right.grid(row = 0, column = 2, sticky = 'wens')
 		self.vsb_tree = Scrollbar(self.frame_left, orient = VERTICAL)
 		self.vsb_tree.pack(side = RIGHT, fill = Y)
 		self.hsb_tree = Scrollbar(self.frame_left, orient = HORIZONTAL)
@@ -47,7 +49,7 @@ class techReqsApp:
 		self.vsb_listBox.pack(side = RIGHT, fill = Y)
 		self.hsb_listBox = Scrollbar(self.frame_midSubSub, orient = HORIZONTAL)
 		self.hsb_listBox.pack(side = BOTTOM, fill = X)		
-		self.midSub_listBox = Listbox(self.frame_midSubSub, height = 10, font = 'arial 10', selectmode = EXTENDED)
+		self.midSub_listBox = Listbox(self.frame_midSubSub, height = 7, font = 'arial 10', selectmode = EXTENDED)
 		self.midSub_listBox.config(yscrollcommand = self.vsb_listBox.set, xscrollcommand = self.hsb_listBox.set)
 		self.midSub_listBox.pack(side = LEFT, fill = X)
 		self.hsb_listBox.config(command = self.midSub_listBox.xview)
@@ -58,12 +60,15 @@ class techReqsApp:
 		self.midSub_listBox.bind('<B1-Motion>', self.shiftSelection)
 		self.commitButton = Button(self.frame_midSub, text = 'создать ТТ')
 		self.commitButton.pack(side = TOP, fill = X)
+
+		self.resultCanvas = Canvas(self.frame_right)
+		self.resultCanvas.pack()
 		
 		#self.button_frame = LabelFrame(self.frame_left, text = 'макет панели спецсимволов')
 		#self.button_frame.grid(row = 1, column = 0)
 		#self.specButton01 = Button(self.button_frame, height = 1, width = 3, command = lambda: addSymbol(self.mid_textBox,'b1')).grid(row = 0, column = 0)
 	
-	#def onClickCommit(self,master):
+	#def onClickCommit(self,parent):
 	#	self.midSub_listBox
 	#	self.midSub_listBox
 	#	pass
@@ -84,7 +89,7 @@ class techReqsApp:
 			self.midSub_listBox.curIndex = i
 		self.recalculateParagraphs(self)
 
-	def appendLine(self,master):
+	def appendLine(self,parent):
 		text = self.mid_textBox.get("1.0",'end-1c') #получаем содержимое поля ввода текста
 		try:
 			text = text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'') #стрипаем введенный разрабом порядковый номер, если он есть
@@ -93,9 +98,10 @@ class techReqsApp:
 		text = str(lastIndex+1)+'. ' + text #добавляем в начало строки новенький пункт 
 		self.midSub_listBox.insert(END,text) #добавляем элемент в конец списка пунктов. мб можно будет вводить в произвольную позицию
 		self.mid_textBox.delete('1.0', END) #удаляем все содержимое поля воода
-		self.midSub_listBox.yview_scroll(lastIndex,'units') #переводит фокус на последний добавленный элемент
+		self.midSub_listBox.yview_scroll(lastIndex,'units') #переводит фокус на последний добавленный элемент 
+		self.refreshResult(self)
 
-	def fillTree(self, master):
+	def fillTree(self, parent):
 		for i in range(1,500):
 			self.tree.insert("", i, "dir%s"%i, text="Dir %s"%i)
 			self.tree.insert("dir%s"%i, i, text=" sub dir %s" %i, values =("%sA" %i," %sB" %i))
@@ -105,11 +111,11 @@ class techReqsApp:
 					'b2':'elem2'}
 		text.insert(END, ' '+symbols[keyval])
 
-	def appendTemplate(self, master,event):
+	def appendTemplate(self, parent,event):
 		item = self.tree.selection()[0]
 		self.mid_textBox.insert(END,("you clicked on", self.tree.item(item,"text")))
 
-	def recalculateParagraphs(self, master):
+	def recalculateParagraphs(self, parent):
 		for index in range(self.midSub_listBox.size()):
 			text = self.midSub_listBox.get(index)
 			try:
@@ -121,6 +127,7 @@ class techReqsApp:
 	def editCurrentLine(self,event):
 		self.commitEditedButton.config(state = NORMAL)
 		self.appendButton.config(state = DISABLED)
+		self.removeSelectedButton.config(state = DISABLED)
 		self.mid_textBox.delete('1.0', END)
 		index = self.midSub_listBox.curselection()[0]
 		text = self.midSub_listBox.get(index)
@@ -134,28 +141,37 @@ class techReqsApp:
 		text = self.mid_textBox.get("1.0",'end-1c')
 		try:
 			text = str(index+1)+'. ' + text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'')
-		except: text = str(index+1)+'. ' + text 
+		except: text = str(index+1)+'. ' + text
 		try:
 			self.midSub_listBox.delete(index)
 			self.midSub_listBox.insert(index,text)
 			self.mid_textBox.delete('1.0', END)
 			self.commitEditedButton.config(state = DISABLED)
+			self.removeSelectedButton.config(state = NORMAL)
 			self.appendButton.config(state = NORMAL)
 		except:
 			self.commitEditedButton.config(state = NORMAL)
+			self.removeSelectedButton.config(state = DISABLED)
 			self.appendButton.config(state = DISABLED)
+		self.refreshResult(self)
 
-	def removeCurrentSelection(self, master): 
+	def removeCurrentSelection(self, parent): 
 		list_index = self.midSub_listBox.curselection()
 		if len(list_index)!=0:
-			list_temp = [self.midSub_listBox.get(imdex) for index in range(0,self.midSub_listBox.size()-1) if not(index in list_index)]
+			list_temp = [self.midSub_listBox.get(index) for index in range(0,self.midSub_listBox.size()) if not(index in list_index)]
 			self.midSub_listBox.delete(0,END)
 			[self.midSub_listBox.insert(END, item) for item in list_temp]
 			self.recalculateParagraphs(self)
 		else: pass
+	
+	def refreshResult(self, parent):
+		if self.midSub_listBox.size()!= 0:
+			for item in self.midSub_listBox.get(0,END):
+				self.resultCanvas.create_text(20, 30, anchor=W, font="Purisa", text = item)
+		pass
 
 	###experimental unworked feture
-	def activeListener(self, master):
+	def activeListener(self, parent):
 		if len(self.midSub_listBox.curselection())!=0:
 			self.removeSelectedButton.config(state=NORMAL)
 		else: self.removeSelectedButton.config(state=DISABLED)
