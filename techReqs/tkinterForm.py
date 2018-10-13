@@ -65,8 +65,10 @@ class techReqsApp:
 		self.vsb_resultCanvas.pack(side = RIGHT, fill = Y)
 		self.resultCanvas = Canvas(self.frame_right)
 		self.resultCanvas.config(yscrollcommand = self.vsb_resultCanvas.set)
-		self.resultCanvas.pack()
+		self.resultCanvas.pack(side = TOP, expand = True, fill = BOTH)
 		self.vsb_resultCanvas.config(command = self.resultCanvas.yview)
+		self.slider_resultCanvas = Scale(self.frame_right, to = 100, orient = HORIZONTAL)
+		self.slider_resultCanvas.pack(side = BOTTOM, fill = X)
 		
 		#self.button_frame = LabelFrame(self.frame_left, text = 'макет панели спецсимволов')
 		#self.button_frame.grid(row = 1, column = 0)
@@ -130,6 +132,7 @@ class techReqsApp:
 			self.midSub_listBox.insert(index,text)
 
 	def editCurrentLine(self,event):
+		self.midSub_listBox.config(state = DISABLED)
 		self.commitEditedButton.config(state = NORMAL)
 		self.appendButton.config(state = DISABLED)
 		self.removeSelectedButton.config(state = DISABLED)
@@ -142,12 +145,13 @@ class techReqsApp:
 		self.mid_textBox.insert(END,text)
 	
 	def commitEditedParagraph(self,mastrer):
-		index = self.midSub_listBox.curselection()[0]
+		index = self.midSub_listBox.index(ACTIVE)#self.midSub_listBox.curselection()[0]
 		text = self.mid_textBox.get("1.0",'end-1c')
 		try:
 			text = str(index+1)+'. ' + text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'')
 		except: text = str(index+1)+'. ' + text
 		try:
+			self.midSub_listBox.config(state = NORMAL)
 			self.midSub_listBox.delete(index)
 			self.midSub_listBox.insert(index,text)
 			self.mid_textBox.delete('1.0', END)
