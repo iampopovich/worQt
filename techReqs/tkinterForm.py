@@ -1,4 +1,3 @@
-#мб позже для разделения пунктов на столбцы нужно будет сплитить строки по переносу строки в сублисты
 import re
 import sys
 import os
@@ -212,10 +211,6 @@ class techReqsApp:
 		else:
 			self.subFrame_frame_right_symbols_buttons.destroy()
 			
-			
-
-
-
 def main():
 	root = Tk()
 	frame = techReqsApp(root)
