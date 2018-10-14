@@ -1,3 +1,4 @@
+#мб позже для разделения пунктов на столбцы нужно будет сплитить строки по переносу строки в сублисты
 import re
 import sys
 import os
@@ -39,11 +40,12 @@ class techReqsApp:
 		self.commitEditedButton.grid(row = 1, column = 1, sticky = 'wens')
 		self.commitEditedButton.config(state = DISABLED)
 		self.frame_mid_listBox = Listbox(self.frame_mid)
-		self.frame_mid_listBox.grid(row = 2, column = 0, sticky = 'wens', columnspan = 3)
+		self.frame_mid_listBox.grid(row = 3, column = 0, sticky = 'wens', columnspan = 3)
 		self.checkBox_is_active = BooleanVar()
 		self.symbolsCheckBox = ttk.Checkbutton(self.frame_mid, text = 'Добавить спец. символ', variable = self.checkBox_is_active)
 		self.symbolsCheckBox.config(command = lambda: self.showSymbolButtons(self))
 		self.symbolsCheckBox.grid(row = 1, column = 2, sticky = 'ns')
+		self.subFrame_symbols_buttons = Frame(self.frame_mid)
 		##right frame init
 		self.frame_right = LabelFrame(parent, text = 'макет результата')
 		self.frame_right.grid(row = 0, column = 2, sticky = 'wens')
@@ -69,12 +71,9 @@ class techReqsApp:
 		self.removeSelectedButton.config(state = NORMAL)
 		self.commitButton = Button(self.subFrame_frame_right_buttons, text = 'создать ТТ')
 		self.commitButton.pack(side = RIGHT, fill = BOTH)
-		self.subFrame_frame_right_symbols = LabelFrame(self.frame_right)
-		self.subFrame_frame_right_symbols.pack(side = TOP, fill = BOTH)
 
 		#self.symbolsComboBox.bind('<<CheckboxSelected>>', self.redrawSymbolButtons)
-		self.subFrame_frame_right_symbols_buttons = Frame(self.subFrame_frame_right_symbols)
-		self.subFrame_frame_right_symbols_buttons.grid(row = 1, column = 0, sticky = 'wens')
+
 
 
 	def setCurrent(self, event):
@@ -179,38 +178,39 @@ class techReqsApp:
 		#for child in self.subFrame_frame_right_symbols_buttons.winfo_children():
    		#	child.destroy()
 		if self.checkBox_is_active.get():
-			self.subFrame_frame_right_symbols_buttons.destroy()
 			print(self.checkBox_is_active.get())
-			self.symbolsPack = Frame(self.subFrame_frame_right_symbols_buttons)
-			self.symbolsPack.config(height = 25)
-			self.symbolsPack.pack(side = TOP, fill =BOTH)
-			self.symbolButton01 = Button(self.symbolsPack, text = 'b1')
+			self.subFrame_symbols_buttons.grid(row = 2, column = 0, sticky = 'wens')
+			self.symbolButton01 = Button(self.subFrame_symbols_buttons, text = 'b1')
 			self.symbolButton01.grid(row = 0, column = 0, sticky  = 'wens')
-			self.symbolButton02 = Button(self.symbolsPack, text = 'b2')
+			self.symbolButton02 = Button(self.subFrame_symbols_buttons, text = 'b2')
 			self.symbolButton02.grid(row = 0, column = 1, sticky  = 'wens')
-			self.symbolButton03 = Button(self.symbolsPack, text = 'b3')
+			self.symbolButton03 = Button(self.subFrame_symbols_buttons, text = 'b3')
 			self.symbolButton03.grid(row = 0, column = 2, sticky  = 'wens')
-			self.symbolButton04 = Button(self.symbolsPack, text = 'b4')
+			self.symbolButton04 = Button(self.subFrame_symbols_buttons, text = 'b4')
 			self.symbolButton04.grid(row = 0, column = 3, sticky  = 'wens')
-			self.symbolButton05 = Button(self.symbolsPack, text = 'b5')
+			self.symbolButton05 = Button(self.subFrame_symbols_buttons, text = 'b5')
 			self.symbolButton05.grid(row = 0, column = 4, sticky  = 'wens')
-			self.symbolButton06 = Button(self.symbolsPack, text = 'b6')
+			self.symbolButton06 = Button(self.subFrame_symbols_buttons, text = 'b6')
 			self.symbolButton06.grid(row = 0, column = 5, sticky  = 'wens')
-			self.symbolButton07 = Button(self.symbolsPack, text = 'b7')
+			self.symbolButton07 = Button(self.subFrame_symbols_buttons, text = 'b7')
 			self.symbolButton07.grid(row = 1, column = 0, sticky  = 'wens')
-			self.symbolButton08 = Button(self.symbolsPack, text = 'b8')
+			self.symbolButton08 = Button(self.subFrame_symbols_buttons, text = 'b8')
 			self.symbolButton08.grid(row = 1, column = 1, sticky  = 'wens')
-			self.symbolButton09 = Button(self.symbolsPack, text = 'b9')
+			self.symbolButton09 = Button(self.subFrame_symbols_buttons, text = 'b9')
 			self.symbolButton09.grid(row = 1, column = 2, sticky  = 'wens')
-			self.symbolButton10 = Button(self.symbolsPack, text = 'b10')
+			self.symbolButton10 = Button(self.subFrame_symbols_buttons, text = 'b10')
 			self.symbolButton10.grid(row = 1, column = 3, sticky  = 'wens')
-			self.symbolButton11 = Button(self.symbolsPack, text = 'b11')
+			self.symbolButton11 = Button(self.subFrame_symbols_buttons, text = 'b11')
 			self.symbolButton11.grid(row = 1, column = 4, sticky  = 'wens')
-			self.symbolButton12 = Button(self.symbolsPack, text = 'b12')
+			self.symbolButton12 = Button(self.subFrame_symbols_buttons, text = 'b12')
 			self.symbolButton12.grid(row = 1, column = 5, sticky  = 'wens')
 		else:
-			self.subFrame_frame_right_symbols_buttons.destroy()
+			self.subFrame_symbols_buttons.grid_forget()
 			
+			
+
+
+
 def main():
 	root = Tk()
 	frame = techReqsApp(root)
