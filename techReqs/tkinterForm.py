@@ -26,21 +26,10 @@ class techReqsApp:
 		self.helpmenu.add_command(label="О программе", command = lambda: showProgramInfo)
 		self.mainmenu.add_cascade(label="Файл", menu=self.filemenu)
 		self.mainmenu.add_cascade(label="Справка", menu=self.helpmenu)
+		self.mainmenu.add_command(label='Создать ТТ', font = 'Arial 10')
 		##left frame init
 		self.frame_left = LabelFrame(parent, text = 'макет выбора1')
 		self.frame_left.grid(row = 0, column = 0, sticky = 'wens')
-		
-		#self.vsb_tree = ttk.Scrollbar(self.frame_left, orient = VERTICAL)
-		#self.vsb_tree.pack(side = RIGHT, fill = BOTH)
-		#self.hsb_tree = ttk.Scrollbar(self.frame_left, orient = HORIZONTAL)
-		#self.hsb_tree.pack(side = BOTTOM, fill = BOTH)
-		#self.tree = ttk.Treeview(self.frame_left, yscrollcommand = self.vsb_tree.set, xscrollcommand = self.hsb_tree.set)
-		#self.tree.pack(side = LEFT, fill = BOTH)
-		#self.hsb_tree.config(command = self.tree.xview)
-		#self.vsb_tree.config(command = self.tree.yview)
-		#self.tree.bind('<Double-1>', lambda x: self.appendTemplate(self,'<Double-1>'))
-		#self.frame_left = LabelFrame(parent, text = 'макет выбора1')
-
 		self.frame_left.grid(row = 0, column = 0, sticky = 'wens')
 		self.vsb_frame_left_listBox = ttk.Scrollbar(self.frame_left, orient = VERTICAL)
 		self.vsb_frame_left_listBox.pack(side = RIGHT, fill = BOTH)
@@ -75,26 +64,23 @@ class techReqsApp:
 		##right frame init
 		self.frame_right = LabelFrame(parent, text = 'макет результата')
 		self.frame_right.grid(row = 0, column = 2, sticky = 'wens')
-		self.subFrame_frame_right_listBox = Frame(self.frame_right)
-		self.subFrame_frame_right_listBox.pack(fill = BOTH)
+		self.subFrame_frame_right_listBox = LabelFrame(self.frame_right)
+		self.subFrame_frame_right_listBox.pack(side = LEFT, fill = BOTH)
 		self.vsb_frame_right_listBox = ttk.Scrollbar(self.subFrame_frame_right_listBox, orient = VERTICAL)
 		self.vsb_frame_right_listBox.pack(side = RIGHT, fill = BOTH)
 		self.hsb_frame_right_listBox = ttk.Scrollbar(self.subFrame_frame_right_listBox, orient = HORIZONTAL)
 		self.hsb_frame_right_listBox.pack(side = BOTTOM, fill = BOTH)	
 		self.frame_right_listBox = Listbox(self.subFrame_frame_right_listBox,  font = 'arial 10', selectmode = EXTENDED, width = 70)
 		self.frame_right_listBox.config(yscrollcommand = self.vsb_frame_right_listBox.set, xscrollcommand = self.hsb_frame_right_listBox.set)
-		self.frame_right_listBox.pack(side = TOP, fill = BOTH)
+		self.frame_right_listBox.pack(side = LEFT, fill = BOTH)
 		self.hsb_frame_right_listBox.config(command = self.frame_right_listBox.xview)
 		self.vsb_frame_right_listBox.config(command = self.frame_right_listBox.yview)
 		self.frame_right_listBox.bind('<Double-1>', self.editCurrentLine)
 		self.frame_right_listBox.bind('<Button-1>', self.setCurrent)
 		self.frame_right_listBox.bind('<Button-3>', self.showListItemSubMenu)
 		self.frame_right_listBox.bind('<B1-Motion>', self.shiftSelection)
-		self.subFrame_frame_right_buttons = Frame(self.frame_right)
-		self.subFrame_frame_right_buttons.pack(side = TOP, fill = BOTH)
-		self.commitButton = ttk.Button(self.subFrame_frame_right_buttons, text = 'создать ТТ')
-		self.commitButton.pack(fill = BOTH)
-
+		#self.commitButton = ttk.Button(self.frame_right, text = 'создать ТТ')
+		#self.commitButton.pack(side = BOTTOM, fill = BOTH)
 
 #main window functions group
 	def fillTree(self, parent):
@@ -252,22 +238,21 @@ class techReqsApp:
 		else: pass
 
 	def showListItemSubMenu(self,event):
-		#if self.frame_right_listBox.size() != 0:
-		isEmpty = self.frame_right_listBox.size() == 0
+		#if self.frame_right_listBox.size() != 0: #есть возможность не показывать ничего
+		isEmpty = self.frame_right_listBox.size() == 0 #либо чекать содержимое листбокса и выдавать попап с разными состояниями
 		multiSelection = len(self.frame_right_listBox.curselection()) > 1
 		self.frame_right_listBox.curIndex = self.frame_right_listBox.nearest(event.y)
 		self.frame_right_listBox.selection_set(self.frame_right_listBox.curIndex)
 		menu = Menu(tearoff=0)
 		menu.add_command(label="Изменить", command = lambda: self.editCurrentLine(self), state = DISABLED if (isEmpty or multiSelection) else NORMAL) #заглушка. если список пуст, то не можем ничего изменить. если мультивыделение - не можем ничего менять
 		menu.add_command(label="Удалить", command = lambda: self.removeCurrentSelection(self), state = DISABLED if isEmpty else NORMAL) #заглушка. если список пуст, то не можем ничего изменить. но можем удалить несколько пунктов разом
+		menu.add_command(label="Создать ТТ", state = DISABLED) # row template
 		menu.add_command(label="Треугольник") # row template
 		x = event.x
 		y = event.y
 		menu.post(event.x_root, event.y_root)
 		#else: pass
 #
-
-	
 
 def main():
 	root = Tk()
