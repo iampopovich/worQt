@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
+
 import NXOpen
 import NXOpen.BlockStyler
 import subprocess
 import re
+import codecs
+import os
+import ctypes
 
 class ColoredBlock:
 	SnapPointTypesEnabled_UserDefined =	 1
@@ -41,10 +46,6 @@ class ColoredBlock:
 
 	def __init__(self):
 		# class members
-		#self.theSession = None
-		#self.theUI = None
-		#self.theDialogName = ''
-		#self.theDialog = None
 		self.group0 = None # Block type: Group
 		self.blockHeight = None # Block type: Double
 		self.blockWidth = None # Block type: Double
@@ -54,22 +55,19 @@ class ColoredBlock:
 		try:
 			self.theSession = NXOpen.Session.GetSession()
 			self.theUI = NXOpen.UI.GetUI()
-			self.workFileName = re.search(r'[a-zA-Zа-яА-Я]{1,}\.py',self.theSession.ExecutingJournal).group(0)
-			self.workDirectory = self.theSession.ExecutingJournal.replace(self.workFileName,'')
-			self.theSessionName = self.theSession.ExecutingJournal #путь до файла 
-			self.theDialogName =  self.theSessionName.replace('.py','.dlx') 
-			self.theDialog = self.theUI.CreateDialog(self.theDialogName)
+			#self.workDirectory = self.theSession.ExecutingJournal.replace(self.workFileName,'')
+			self.theSessionPath = self.theSession.ExecutingJournal #путь до файла 
+			self.workFileName = re.search(r'[a-zA-Zа-яА-Я]{1,}\.py',self.theSessionPath).group(0)
+			self.theDialogPath =  self.theSessionPath.replace('.py','.dlx')
+			self.theExecutablePath = '________________________________' #self.theSessionPath.replace('.py','.exe') придется писать хардвэй , иначе пока никак
+			self.theDialog = self.theUI.CreateDialog(self.theDialogPath)
 			self.theDialog.AddApplyHandler(self.apply_cb)
 			self.theDialog.AddInitializeHandler(self.initialize_cb)
 			self.theDialog.AddDialogShownHandler(self.dialogShown_cb)
 			self.isDrawing = 'DRAFTING' in self.theSession.ApplicationName
 			self.isModeling = 'MODEL' in self.theSession.ApplicationName
+			self.lw = self.theSession.ListingWindow
 		except Exception as ex:
-			lw = self.theSession.ListingWindow
-			lw.Open()
-			lw.WriteLine(self.workDirectory)
-			lw.WriteLine(str(self.theSessionName))
-			lw.WriteLine(str(self.theDialogName))
 			raise ex
 
 	def Show(self):
@@ -100,10 +98,8 @@ class ColoredBlock:
 			self.theUI.NXMessageBox.Show("Block Styler", NXOpen.NXMessageBox.DialogType.Error, str(ex))
 	
 	def apply_cb(self):
-		lw = self.theSession.ListingWindow
 		errorCode = 0
 		blockFeatureBuilder1 = None
-
 		try:
 			if self.enum0.GetProperties().GetEnum("Value") == 0:
 				self.createTechRequirements(self)
@@ -123,10 +119,18 @@ class ColoredBlock:
 		return errorCode
 	
 	def createTechRequirements(self, parent):
-		#ctr_subprocess = subprocess.Popen()
-		#if self.isDrawing:
-		#if self.isModeling:
-		pass	
+		try:
+			ctr_subprocess = subprocess.Popen([self.theExecutablePath], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+			text = ctr_subprocess.communicate()[0]
+			self.lw.Open()
+			self.lw.WriteLine(str(text))
+			#if self.isDrawing: создаем один контейнер ТТ
+			#if self.isModeling: создаем другой контейнер ТТ
+			#s = child.stdout.readline().decode('cp866')
+		except Exception as ex:
+			self.lw.Open()
+			self.lw.WriteLine(str(ex))		
+		pass
 	
 	def rebuildTechRequirements(self, parent):
 		self.theUI.NXMessageBox.Show("__alarm__template__", NXOpen.NXMessageBox.DialogType.Warning, "В разработке.")
@@ -135,43 +139,17 @@ class ColoredBlock:
 	def removeTechRequirements(self, parent):
 		self.theUI.NXMessageBox.Show("__alarm__template__", NXOpen.NXMessageBox.DialogType.Warning, "В разработке.")
 		pass	
-###		
-#def updateSwitcher():
-#	if :
-#		try:
-#			for sheet in theSession.Parts.Work.DrawingSheets:
-#				for tempView in sheet.GetDraftingViews():
-#					try:
-#						views = [NXOpen.View.Null] * 1 
-#						views[0] = tempView
-#						editViewSettingsBuilder = workPart.SettingsManager.CreateDrawingEditViewSettingsBuilder(views)
-#						editsettingsbuilders = [NXOpen.Drafting.BaseEditSettingsBuilder.Null] * 1 
-#						editsettingsbuilders[0] = editViewSettingsBuilder
-#						workPart.SettingsManager.ProcessForMultipleObjectsSettings(editsettingsbuilders)
-#					except:
-#						theUI.NXMessageBox.Show("Alarm", NXOpen.NXMessageBox.DialogType.Warning, "Ошибка в обходе видов.") #debug info
-#					
-#					editViewSettingsBuilder.ViewStyle.ViewStyleGeneral.AutomaticUpdate = switchMode#False
-#					editViewSettingsBuilder.Commit()				
-#					editViewSettingsBuilder.Destroy()
-#			theUI.NXMessageBox.Show("Автоматическое обновление видов", NXOpen.NXMessageBox.DialogType.Information, "Автоматическое обновление видов %s." %resUpdate)
-#		except:
-#			theUI.NXMessageBox.Show("Alarm", NXOpen.NXMessageBox.DialogType.Warning, "Видов с чертежами не найдено.")
-#	elif  in theSession.ApplicationName:
-#		theUI.NXMessageBox.Show("Alarm", NXOpen.NXMessageBox.DialogType.Warning, "Вы в режиме моделирования.")
-#	else:
-#		theUI.NXMessageBox.Show("Alarm", NXOpen.NXMessageBox.DialogType.Warning, "Переключитесь в режим черчения.")
-###
 
 def main():
 	try:
 		theColoredBlock = ColoredBlock()
 		theColoredBlock.Show()
 	except Exception as ex:
-		NXOpen.UI.GetUI().NXMessageBox.Show(
-			"Block Styler", NXOpen.NXMessageBox.DialogType.Error, str(ex))
+		NXOpen.UI.GetUI().NXMessageBox.Show("Block Styler", NXOpen.NXMessageBox.DialogType.Error, str(ex))
 	finally:
 		theColoredBlock.Dispose()
 
 if __name__ == "__main__":
 	main()
+
+
