@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import NXOpen
 import NXOpen.BlockStyler
 import subprocess
@@ -55,11 +54,12 @@ class ColoredBlock:
 		try:
 			self.theSession = NXOpen.Session.GetSession()
 			self.theUI = NXOpen.UI.GetUI()
+			self.workPart = self.theSession.Parts.Work
 			#self.workDirectory = self.theSession.ExecutingJournal.replace(self.workFileName,'')
 			self.theSessionPath = self.theSession.ExecutingJournal #путь до файла 
 			self.workFileName = re.search(r'[a-zA-Zа-яА-Я]{1,}\.py',self.theSessionPath).group(0)
 			self.theDialogPath =  self.theSessionPath.replace('.py','.dlx')
-			self.theExecutablePath = '________________________________' #self.theSessionPath.replace('.py','.exe') придется писать хардвэй , иначе пока никак
+			self.theExecutablePath = '' #self.theSessionPath.replace('.py','.exe') придется писать хардвэй , иначе пока никак
 			self.theDialog = self.theUI.CreateDialog(self.theDialogPath)
 			self.theDialog.AddApplyHandler(self.apply_cb)
 			self.theDialog.AddInitializeHandler(self.initialize_cb)
@@ -107,8 +107,7 @@ class ColoredBlock:
 				self.rebuildTechRequirements(self)
 			elif self.enum0.GetProperties().GetEnum("Value") == 2:
 				self.removeTechRequirements(self)
-			else:
-				pass
+			else: pass
 				
 		except Exception as ex:
 			errorCode = 1
@@ -122,10 +121,18 @@ class ColoredBlock:
 		try:
 			ctr_subprocess = subprocess.Popen([self.theExecutablePath], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 			text = ctr_subprocess.communicate()[0]
+			text = text.decode('utf-8')
 			self.lw.Open()
 			self.lw.WriteLine(str(text))
 			#if self.isDrawing: создаем один контейнер ТТ
 			#if self.isModeling: создаем другой контейнер ТТ
+				#specificNoteBuilder = self.workPart.PmiManager.PmiAttributes.CreateSpecificNoteBuilder(NXOpen.Annotations.SpecificNote.Null)
+				#specificNoteBuilder.Origin.Anchor = NXOpen.Annotations.OriginBuilder.AlignmentPosition.MidCenter
+				#specificNoteBuilder.Origin.SetInferRelativeToGeometry(True)
+				#specificNoteBuilder.Origin.Plane.PlaneMethod = NXOpen.Annotations.PlaneBuilder.PlaneMethodType.ModelView
+				#specificNoteBuilder.SetText([text])
+				#specificNoteBuilder.Commit()
+				#specificNoteBuilder.Destroy()
 			#s = child.stdout.readline().decode('cp866')
 		except Exception as ex:
 			self.lw.Open()
