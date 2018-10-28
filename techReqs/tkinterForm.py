@@ -1,12 +1,11 @@
 #мб позже для разделения пунктов на столбцы нужно будет сплитить строки по переносу строки в сублисты
+#.selection_clear()
 import re
 import sys
-import os
-import json, csv, xml
-from fontTools.ttLib import TTFont
 from tkinter import *
 from tkinter import ttk
 import standardLibrary
+import gc
 
 class techReqsApp:
 	def __init__(self, parent):
@@ -23,10 +22,10 @@ class techReqsApp:
 		self.filemenu.add_command(label="Выход")
 		self.helpmenu = Menu(self.mainmenu, tearoff=0)
 		self.helpmenu.add_command(label="Помощь")
-		self.helpmenu.add_command(label="О программе", command = lambda: showProgramInfo)
+		self.helpmenu.add_command(label="О программе", command = lambda: self.showProgramInfo)
 		self.mainmenu.add_cascade(label="Файл", menu=self.filemenu)
 		self.mainmenu.add_cascade(label="Справка", menu=self.helpmenu)
-		self.mainmenu.add_command(label='Создать ТТ', font = 'Arial 10')
+		self.mainmenu.add_command(label='Создать ТТ', command = self.createTechReqs)
 		##left frame init
 		self.frame_left = LabelFrame(parent, text = 'макет выбора1')
 		self.frame_left.grid(row = 0, column = 0, sticky = 'wens')
@@ -36,6 +35,7 @@ class techReqsApp:
 		self.hsb_frame_left_listBox = ttk.Scrollbar(self.frame_left, orient = HORIZONTAL)
 		self.hsb_frame_left_listBox.pack(side = BOTTOM, fill = BOTH)
 		self.frame_left_listBox = Listbox(self.frame_left, yscrollcommand = self.vsb_frame_left_listBox.set, xscrollcommand = self.hsb_frame_left_listBox.set)
+		self.frame_left_listBox.config(width = 30)
 		self.frame_left_listBox.pack(side = LEFT, fill = BOTH)
 		self.hsb_frame_left_listBox.config(command = self.frame_left_listBox.xview)
 		self.vsb_frame_left_listBox.config(command = self.frame_left_listBox.yview)
@@ -43,7 +43,8 @@ class techReqsApp:
 		##mid frame init
 		self.frame_mid = LabelFrame(parent, text = 'макет редактора')
 		self.frame_mid.grid(row = 0, column = 1, sticky = 'wens')
-		self.frame_mid_textBox = Text(self.frame_mid, height = 10, font = 'arial 10',wrap = WORD)
+		self.textVariable = ''
+		self.frame_mid_textBox = Text(self.frame_mid, height = 10, width = 60, font = 'arial 11',wrap = WORD)
 		self.frame_mid_textBox.grid(row = 0, column = 0, sticky = 'wens', columnspan = 3)
 		self.frame_mid_textBox.focus()
 		self.appendButton = ttk.Button(self.frame_mid, text = 'добавить пункт ТТ')
@@ -53,9 +54,21 @@ class techReqsApp:
 		self.commitEditedButton.config(command = lambda: self.commitEditedParagraph(self))
 		self.commitEditedButton.grid(row = 1, column = 1, sticky = 'wens')
 		self.commitEditedButton.config(state = DISABLED)
-		self.frame_mid_listBox = Listbox(self.frame_mid)
-		self.frame_mid_listBox.grid(row = 3, column = 0, sticky = 'wens', columnspan = 3)
-		self.frame_mid_listBox.bind('<Button-1>', self.showTemplate)
+		self.frame_mid_subframe_listbox = Frame(self.frame_mid)
+		self.frame_mid_subframe_listbox.grid(row = 3, column = 0, sticky = 'wens', columnspan = 3)
+		self.vsb_frame_mid_listBox = ttk.Scrollbar(self.frame_mid_subframe_listbox, orient = VERTICAL)
+		self.vsb_frame_mid_listBox.pack(side = RIGHT, fill = BOTH)
+		self.hsb_frame_mid_listBox = ttk.Scrollbar(self.frame_mid_subframe_listbox, orient = HORIZONTAL)
+		self.hsb_frame_mid_listBox.pack(side = BOTTOM, fill = BOTH)
+		self.frame_mid_listBox = Listbox(self.frame_mid_subframe_listbox)
+		self.frame_mid_listBox.pack(fill = BOTH)
+		self.frame_mid_listBox.config( yscrollcommand = self.vsb_frame_mid_listBox.set, xscrollcommand = self.hsb_frame_mid_listBox.set)
+		self.hsb_frame_mid_listBox.config(command = self.frame_mid_listBox.xview)
+		self.vsb_frame_mid_listBox.config(command = self.frame_mid_listBox.yview)
+		self.frame_mid_listBox.bind('<Button-1>', self.showTemplatePreview)
+		self.frame_mid_listBox.bind('<Button-3>', self.showParagraphsItemSubMenu)
+		#self.frame_mid_listBox.bind('<Leave>', self.onLeave)
+		self.frame_mid_listBox.bind('<Escape>', self.refuseTemplatePreview)
 		self.checkBox_is_active = BooleanVar()
 		self.symbolsCheckBox = ttk.Checkbutton(self.frame_mid, text = 'Добавить спец. символ', variable = self.checkBox_is_active)
 		self.symbolsCheckBox.config(command = lambda: self.showSymbolButtons(self))
@@ -79,27 +92,33 @@ class techReqsApp:
 		self.frame_right_listBox.bind('<Button-1>', self.setCurrent)
 		self.frame_right_listBox.bind('<Button-3>', self.showListItemSubMenu)
 		self.frame_right_listBox.bind('<B1-Motion>', self.shiftSelection)
+		
 		#self.commitButton = ttk.Button(self.frame_right, text = 'создать ТТ')
 		#self.commitButton.pack(side = BOTTOM, fill = BOTH)
 
 #main window functions group
-	def fillTree(self, parent):
-		for i in range(1,500):
-			self.tree.insert('', i, 'dir%s'%i, text='Dir %s'%i)
-			self.tree.insert('dir%s'%i, i, text=' sub dir %s' %i, values = ('%sA' %i,' %sB' %i))
+	#def fillTree(self, parent):
+	#	for i in range(1,500):
+	#		self.tree.insert('', i, 'dir%s'%i, text='Dir %s'%i)
+	#		self.tree.insert('dir%s'%i, i, text=' sub dir %s' %i, values = ('%sA' %i,' %sB' %i))
 	
 	def fillCategoriesListBox(self, parent):
 		for key in sorted(standardLibrary.dict_categories.keys()):
 			self.frame_left_listBox.insert(END, key)
 
-	def loadFont():
-		fontPath = '%s\\GOST_Type_A.ttf' %os.path.dirname(os.path.realpath(__file__))
-		font = TTFont(fontPath)
-		return font
+	#def loadFont():
+	#	fontPath = '%s\\GOST_Type_A.ttf' %os.path.dirname(os.path.realpath(__file__))
+	#	font = TTFont(fontPath)
+	#	return font
 
-	def showProgramInfo(self, master):
+	def createTechReqs(self):
+		for line in self.frame_right_listBox.get(0,END):
+			self.textVariable+=line+'\n'
+		##if messagebox.askokcancel("Создать ТТ", "Вы хотите создать ТТ и выйти?"):
+		self.parent.destroy()
+
+	def showProgramInfo(self, parent):
 		pass
-
 #
 
 #frame_left functions group
@@ -110,36 +129,83 @@ class techReqsApp:
 		text = self.frame_left_listBox.get(self.frame_left_listBox.curIndex) #text is a key
 		for item in sorted(standardLibrary.dict_categories[text]):
 			self.frame_mid_listBox.insert(END, item) 
+		del text
+		gc.collect()
 #
 
 #frame_mid functions group
 	def addSymbol(self, parent, keyval):
 		text = standardLibrary.dict_symbols[keyval]
 		self.frame_mid_textBox.insert(END, ' '+text)
+		del text
+		gc.collect()
 
-	def appendLine(self,parent):
+	def appendLine(self,parent): # можно задать (self,parent,text = self.frame_mid_textBox.get('1.0','end-1c')) и вызывать с параметром другого текста
 		text = self.frame_mid_textBox.get('1.0','end-1c') #получаем содержимое поля ввода текста
 		try:
-			text = text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'') #стрипаем введенный разрабом порядковый номер, если он есть
+			text = text.replace(re.match(r'\s{0,}[0-9]{1,3}[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'') #стрипаем введенный разрабом порядковый номер, если он есть
 		except: pass
 		lastIndex = self.frame_right_listBox.size() #получаем текущий последний пункт по порядку
-		text = str(lastIndex+1)+'. ' + text #добавляем в начало строки новенький пункт 
+		text = str(lastIndex+1)+' ' + text #добавляем в начало строки новенький пункт 
+		text = self.recalculateParagraphsWrapping(self, text)
 		self.frame_right_listBox.insert(END,text) #добавляем элемент в конец списка пунктов. мб можно будет вводить в произвольную позицию
 		self.frame_mid_textBox.delete('1.0', END) #удаляем все содержимое поля воода
+		self.recalculateParagraphsNumbers(self)
 		self.frame_right_listBox.yview_scroll(lastIndex,'units') #переводит фокус на последний добавленный элемент 
+		self.frame_mid_textBox.focus()
 
-	def showTemplate(self,event):
-		try:
-			self.frame_mid_listBox.curIndex = self.frame_mid_listBox.nearest(event.y)
-			text = self.frame_mid_listBox.get(self.frame_left_listBox.curIndex) #text is a key
-		except: pass
+	def showTemplatePreview(self,event):
+		#tempText = self.frame_mid_textBox.get('1.0','end-1c')
+		self.frame_mid_listBox.curIndex = self.frame_mid_listBox.nearest(event.y)
+		paragraphText = self.frame_mid_listBox.get(self.frame_mid_listBox.curIndex)
+		self.frame_mid_textBox.delete('1.0',END)
+		self.frame_mid_textBox.insert(END,paragraphText)
+		#self.frame_mid_textBox.config(state = DISABLED) - потом надо будет чекать состояние текстбокса, оно не надо вообще
+
+	def onLeave(self, enter):
+		if len(self.frame_mid_listBox.curselection()) != 0:
+			self.frame_mid_textBox.config(state = NORMAL)
+			self.frame_mid_textBox.delete('1.0', END)
+			self.frame_mid_textBox.focus()
+			self.frame_mid_listBox.selection_clear(0,END)
+		else: pass
+
+	def refuseTemplatePreview(self, event):
+		pass
+	
+	def editTemplateParagraph(self, parent):
+		pass
+
+	def showParagraphsItemSubMenu(self,event):
+		self.frame_mid_listBox.selection_clear(0,END)
+		isEmpty = self.frame_mid_listBox.size() == 0
+		self.frame_mid_listBox.curIndex = self.frame_mid_listBox.nearest(event.y)
+		self.frame_mid_listBox.selection_set(self.frame_mid_listBox.curIndex)
+		menu = Menu(tearoff=0)
+		menu.add_command(label="Изменить", command = lambda: self.editTemplateParagraph(self))
+		menu.entryconfig(0,state = DISABLED if isEmpty else NORMAL)
+		menu.add_command(label="Добавить", command = lambda: self.appendTemplateParagraph(self))
+		menu.entryconfig(1,state = DISABLED if isEmpty else NORMAL)
+		menu.post(event.x_root, event.y_root)
+		del(menu)
+	
+	def appendTemplateParagraph(self, parent): #смотри реф на appendLine
+		index = self.frame_mid_listBox.curselection()[0]
+		text = self.frame_mid_listBox.get(index)
+		lastIndex = self.frame_right_listBox.size()
+		text = str(lastIndex+1)+' ' + text 
+		self.frame_right_listBox.insert(END,text)
+		self.frame_mid_textBox.delete('1.0', END)
+		self.frame_right_listBox.yview_scroll(lastIndex,'units')
+		pass
 
 	def commitEditedParagraph(self, parent):
 		index = self.frame_right_listBox.index(ACTIVE)
 		text = self.frame_mid_textBox.get('1.0','end-1c')
 		try:
-			text = str(index+1)+'. ' + text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'')
-		except: text = str(index+1)+'. ' + text
+			text = str(index+1)+' ' + text.replace(re.match(r'\s{0,}[0-9]{1,3}[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1,}',text).group(0),'')
+		except: text = str(index+1)+' ' + text
+		text = self.recalculateParagraphsWrapping(self, text)
 		try:
 			self.frame_right_listBox.config(state = NORMAL)
 			self.frame_right_listBox.delete(index)
@@ -150,6 +216,7 @@ class techReqsApp:
 		except:
 			self.commitEditedButton.config(state = NORMAL)
 			self.appendButton.config(state = DISABLED)
+		self.recalculateParagraphsNumbers(self)
 
 	def showSymbolButtons(self, master):  # переделывать с декортаром или макетировать шаблон с заполнением из словаря
 		#for child in self.subFrame_frame_right_symbols_buttons.winfo_children():
@@ -192,6 +259,25 @@ class techReqsApp:
 	def setCurrent(self, event):
 		self.frame_right_listBox.curIndex = self.frame_right_listBox.nearest(event.y)
 
+	def recalculateParagraphsWrapping(self,parent, text):
+		symbolsLength = len(text)
+		rowLength = len(text.split('\n'))
+		fontSize = 5
+		canvasWidth = 185
+		tmpLength = 0
+		wrappingRatio = canvasWidth/fontSize
+		replaceableText = []
+		for word in text.split():
+			tmpLength += len(word) +1 #или +2
+			if tmpLength >= wrappingRatio:
+				replaceableText.append('\n')
+				replaceableText.append(' '*(len(str(self.frame_right_listBox.size()))+2))
+				tmpLength = len(word)
+			else: pass
+			replaceableText.append(word+' ')
+		return(''.join(replaceableText))
+		pass
+
 	def shiftSelection(self, event):
 		index = self.frame_right_listBox.nearest(event.y)
 		if index < self.frame_right_listBox.curIndex:
@@ -204,16 +290,19 @@ class techReqsApp:
 			self.frame_right_listBox.delete(index)
 			self.frame_right_listBox.insert(index-1, x)
 			self.frame_right_listBox.curIndex = index
-		self.recalculateParagraphs(self)
+		self.recalculateParagraphsNumbers(self)
 
-	def recalculateParagraphs(self, parent):
-		for index in range(self.frame_right_listBox.size()):
-			text = self.frame_right_listBox.get(index)
-			try:
-				text = str(index+1)+'. ' + text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1}',text).group(0),'')
-			except: pass
-			self.frame_right_listBox.delete(index)
-			self.frame_right_listBox.insert(index,text)
+	def recalculateParagraphsNumbers(self, parent):
+		if self.frame_right_listBox.size() == 0: pass
+		else:
+			for index in range(self.frame_right_listBox.size()):
+				text = self.frame_right_listBox.get(index)
+				try:
+					text = str(index+1)+' ' + text.replace(re.match(r'\s{0,}[0-9]{1,3}[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1}',text).group(0),'') #вставка пробелов в начало строки для равнения по краям
+					text = (' '*(len(str(self.frame_right_listBox.size()))- len(str(index+1))))+text 
+				except: pass
+				self.frame_right_listBox.delete(index)
+				self.frame_right_listBox.insert(index,text)
 
 	def editCurrentLine(self,event):
 		self.frame_mid_textBox.focus()
@@ -224,7 +313,8 @@ class techReqsApp:
 		index = self.frame_right_listBox.curselection()[0]
 		text = self.frame_right_listBox.get(index)
 		try:
-			text = text.replace(re.match(r'[0-9]{1,3}\.[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1}',text).group(0),'')
+			text = text.replace(re.match(r'\s{0,}[0-9]{1,3}[\s]{0,}|[,\.;\'~!@\#$%^&*()_+"]{1}',text).group(0),'')
+			text = text.replace(re.search(r'\n[\s]{1,}',text).group(0),'\n')
 		except:	pass
 		self.frame_mid_textBox.insert(END,text)
 
@@ -234,33 +324,32 @@ class techReqsApp:
 			list_temp = [self.frame_right_listBox.get(index) for index in range(0,self.frame_right_listBox.size()) if not(index in list_index)]
 			self.frame_right_listBox.delete(0,END)
 			[self.frame_right_listBox.insert(END, item) for item in list_temp]
-			self.recalculateParagraphs(self)
+			self.recalculateParagraphsNumbers(self)
+			del(list_temp,list_index)
 		else: pass
 
 	def showListItemSubMenu(self,event):
-		#if self.frame_right_listBox.size() != 0: #есть возможность не показывать ничего
-		isEmpty = self.frame_right_listBox.size() == 0 #либо чекать содержимое листбокса и выдавать попап с разными состояниями
-		multiSelection = len(self.frame_right_listBox.curselection()) > 1
 		self.frame_right_listBox.curIndex = self.frame_right_listBox.nearest(event.y)
 		self.frame_right_listBox.selection_set(self.frame_right_listBox.curIndex)
+		isEmpty = self.frame_right_listBox.size() == 0
+		multiSelection = len(self.frame_right_listBox.curselection()) > 1
 		menu = Menu(tearoff=0)
-		menu.add_command(label="Изменить", command = lambda: self.editCurrentLine(self), state = DISABLED if (isEmpty or multiSelection) else NORMAL) #заглушка. если список пуст, то не можем ничего изменить. если мультивыделение - не можем ничего менять
-		menu.add_command(label="Удалить", command = lambda: self.removeCurrentSelection(self), state = DISABLED if isEmpty else NORMAL) #заглушка. если список пуст, то не можем ничего изменить. но можем удалить несколько пунктов разом
-		menu.add_command(label="Создать ТТ", state = DISABLED) # row template
-		menu.add_command(label="Треугольник") # row template
-		x = event.x
-		y = event.y
+		menu.add_command(label="Изменить", command = lambda: self.editCurrentLine(self))
+		menu.entryconfig(0,state = DISABLED if (isEmpty or multiSelection) else NORMAL)
+		menu.add_command(label="Удалить", command = lambda: self.removeCurrentSelection(self))
+		menu.entryconfig(1,state = DISABLED if isEmpty else NORMAL)
+		menu.add_command(label="Треугольник") 
 		menu.post(event.x_root, event.y_root)
-		#else: pass
-#
+		del(menu)
+#		
 
 def main():
 	root = Tk()
 	frame = techReqsApp(root)
-	#frame.fillTree(root)
 	frame.fillCategoriesListBox(root)
 	root.mainloop()
-
-
+	sys.stdout.write(frame.textVariable)
+	sys.stdout.flush()
+	
 if __name__ == '__main__':
 	main()
