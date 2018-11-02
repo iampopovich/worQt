@@ -144,38 +144,19 @@ class ColoredBlock:
 	def calculateScalePoint(self, parent, view,text,scale = 1.000):
 		self.lw.Open()
 		bodies = self.cycleObjects(self)
-		#for body in bodies:
-		wrapGeometryBuilder = self.workPart.Features.CreateWrapGeometryBuilder(NXOpen.Features.WrapGeometry.Null)
-		wrapGeometryBuilder.Geometry.Add(bodies) #было bodies и не было цикла - обход уфсессии не дает профита
-		wrapGeometryBuilder.AddOffset.RightHandSide = "0"
-		wrapGeometryBuilder.SplitOffset.RightHandSide = "0"
-		wrapGeometryBuilder.DistTol = 0.1
-		wrappedBody = wrapGeometryBuilder.Commit()
-		wrapGeometryBuilder.Destroy()
-		#points = [item.GetVertices() for item in wrappedBody.GetEdges()] 
-		#self.theSession.UpdateManager.AddToDeleteList([wrappedBody])
-		points = [item.GetVertices() for item in view.AskVisibleObjects() if isinstance(item,NXOpen.Edge)] 
-		points = self.getListFlat(self,points)
-		x_points = [point.X for point in points]
-		y_points = [point.Y for point in points]
-		z_points = [point.Z for point in points]
+		points = [theUF.ModlGeneral.AskBoundingBox(item.Tag) for item in bodies]
+		x_points, y_points, z_points = [],[],[]
+		[x_points.extend([bodyPoints[0],bodyPoints[3]]) for bodyPoints in points]
+		[y_points.extend([bodyPoints[1],bodyPoints[4]]) for bodyPoints in points]
+		[z_points.extend([bodyPoints[2],bodyPoints[5]]) for bodyPoints in points]
 		x_max, y_max, z_max = max(x_points), max(y_points), max(z_points)
 		x_min, y_min, z_min = min(x_points), min(y_points), min(z_points)
 		line1 = self.workPart.Curves.CreateLine(NXOpen.Point3d(x_max,y_max,z_max),NXOpen.Point3d(x_min,y_min,z_min))
 		line2 = self.workPart.Curves.CreateLine(NXOpen.Point3d(x_max,y_max,z_min),NXOpen.Point3d(x_min,y_min,z_max))
 		pointIntersect = self.theUF.Curve.Intersect(line1.Tag, line2.Tag,[line1.StartPoint.X,line1.StartPoint.Y,line1.StartPoint.Z])
-
-		#pc1 = set(list(itertools.product([x_max,x_min],[y_min,y_max],[z_min,z_max])))
-		#pc2 = set(list(itertools.product([x_max,x_min],[y_min,y_max],[z_min,z_max])))
-		#for p1 in pc1:
-		#	for p2 in pc2:
-		#		self.workPart.Curves.CreateLine(NXOpen.Point3d(p1[0],p1[1],p1[2]),NXOpen.Point3d(p2[0],p2[1],p2[2]))
 		#startPosition##########
-		new_x = x_max
-		new_y = y_max
-		new_z = pointIntersect.CurvePoint[2]
-		pointPlane = NXOpen.Point3d(new_x,new_y,new_z)
-		pointText = NXOpen.Point3d(new_x,new_y,new_z)
+		pointPlane = NXOpen.Point3d(x_max,y_max,pointIntersect.CurvePoint[2])
+		pointText = NXOpen.Point3d(x_max,y_max,pointIntersect.CurvePoint[2])
 		########################
 		pmiNoteBuilder = self.workPart.Annotations.CreatePmiNoteBuilder(NXOpen.Annotations.SimpleDraftingAid.Null)
 		pmiNoteBuilder.Origin.Plane.PlaneMethod = NXOpen.Annotations.PlaneBuilder.PlaneMethodType.ModelView
@@ -190,23 +171,12 @@ class ColoredBlock:
 		plane.SetOrigin(pointPlane)
 		cd = self.workPart.Annotations.CreateComponentData(PMIObject)
 		scale = (z_max - z_min)/(cd.GetTextComponents()[0]).Height
-		#self.theSession.UpdateManager.AddToDeleteList([wrappedBody,line1,line2])
-		self.theSession.UpdateManager.AddToDeleteList([wrappedBody,line1,line2])
+		self.theSession.UpdateManager.AddToDeleteList([line1,line2])
 		pmiNoteBuilder.Text.TextBlock.SetText(['<C%s>'%(scale)]+text+['<C>'])
 		pmiNoteBuilder.ShowResults()
 		pmiNoteBuilder.Commit()
 		pmiNoteBuilder.Destroy()
 		return PMIObject
-
-	def getListFlat(self, parent, glf_list,glf_flatList = []):
-		try:
-			for item in glf_list:
-				if isinstance(item, collections.Iterable):
-					self.getListFlat(self,item,glf_flatList)
-				else: glf_flatList.append(item)
-			return set(glf_flatList)
-		except Exception as ex:
-			return ('getListFlat failed with %s' %ex)
 
 	def createTechRequirements(self, parent):
 		#try:	
