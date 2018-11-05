@@ -268,7 +268,7 @@ class techReqsApp:
 		wrappingRatio = canvasWidth/fontSize
 		replaceableText = []
 		for word in text.split():
-			tmpLength += len(word) +1 #или +2
+			tmpLength += len(word) +1 #или +2 , по госту оформление знаков препинаний идет через раздельный пробел ГОСТ 7.1—2003
 			if tmpLength >= wrappingRatio:
 				replaceableText.append('\n')
 				replaceableText.append(' '*(len(str(self.frame_right_listBox.size()))+2))
@@ -341,15 +341,31 @@ class techReqsApp:
 		menu.add_command(label="Треугольник") 
 		menu.post(event.x_root, event.y_root)
 		del(menu)
+
+	def parseText(self, parent, text = None):
+		try:
+			joinedText = []
+			for row in text.split('\n'): 
+				try:
+					re.match(r'^\s{0,}[0-9]{1,3}\s{0,}',row).group(0)
+					joinedText.append(row)
+				except Exception as ex: 
+					joinedText[-1] += row
+					continue
+			for row in joinedText: self.frame_right_listBox.insert(END,row)
+			self.recalculateParagraphsNumbers(self)
+		except Exception as ex: self.frame_mid_textBox.insert(END,str(ex)) 
 #		
 
-def main():
+def main(argv):
 	root = Tk()
 	frame = techReqsApp(root)
 	frame.fillCategoriesListBox(root)
+	try: frame.parseText(root,argv[1])
+	except: pass
 	root.mainloop()
 	sys.stdout.write(frame.textVariable)
 	sys.stdout.flush()
 	
 if __name__ == '__main__':
-	main()
+	main(sys.argv)
