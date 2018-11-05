@@ -144,7 +144,7 @@ class ColoredBlock:
 	def calculateScalePoint(self, parent, view,text,scale = 1.000):
 		self.lw.Open()
 		bodies = self.cycleObjects(self)
-		points = [theUF.ModlGeneral.AskBoundingBox(item.Tag) for item in bodies]
+		points = [self.theUF.ModlGeneral.AskBoundingBox(item.Tag) for item in bodies]
 		x_points, y_points, z_points = [],[],[]
 		[x_points.extend([bodyPoints[0],bodyPoints[3]]) for bodyPoints in points]
 		[y_points.extend([bodyPoints[1],bodyPoints[4]]) for bodyPoints in points]
@@ -220,16 +220,50 @@ class ColoredBlock:
 		pass
 	
 	def editTechRequirements(self, parent):
-		self.theUI.NXMessageBox.Show('__alarm__template__', NXOpen.NXMessageBox.DialogType.Warning, 'В разработке.')
-		pass
-
-	def rebuildTechRequirements(self, parent):
-		try: #проверяем наличие вида, если отсутствует - выдаем алерт
+		try:
 			layout = self.workPart.Layouts.FindObject('L1')
 			modelingView = self.workPart.ModelingViews.FindObject('ИЗОМЕТРИЧЕСКИЙ')
 			layout.ReplaceView(self.workPart.ModelingViews.WorkView, modelingView, True)
+			noteIdentifier, noteTag = None, None
+			for note in self.workPart.Notes:
+				noteIdentifier = note.JournalIdentifier if note.Name in ['ТЕХНИЧЕСКИЕ_ТРЕБОВАНИЯ'] else None
+				noteTag = note.Tag if note.Name in ['ТЕХНИЧЕСКИЕ_ТРЕБОВАНИЯ'] else None
+			taggedNote = NXOpen.TaggedObjectManager.GetTaggedObject(noteTag)
+			pmiNoteBuilder = self.workPart.Annotations.CreatePmiNoteBuilder(taggedNote)
+			text = pmiNoteBuilder.Text.TextBlock.GetText()
+			scale = [text[0],text[-1]]
+			text = '\n'.join(text[1:-1])
+			etr_subprocess = subprocess.Popen([self.theExecutablePath,text], stdout = subprocess.PIPE, stdin = subprocess.PIPE)
+			#etr_subprocess = subprocess.Popen([self.theExecutablePath], stdout = subprocess.PIPE, stdin = subprocess.PIPE)
+			#etr_subprocess.stdin.write(text.encode('utf-8'))
+			text = etr_subprocess.communicate()[0]
+			text = text.decode('cp1251') #из-за консоли возвращаем виндовую кодировку или ср866
+			text = text.split('\r\n')
+			pmiNoteBuilder.Text.TextBlock.SetText([scale[0]]+text+[scale[1]])
+			pmiNoteBuilder.ShowResults()
+			pmiNoteBuilder.Commit()
+			pmiNoteBuilder.Destroy()
+			modelingView.Fit()
 		except Exception as ex:
-			self.theUI.NXMessageBox.Show('__alarm__template__', NXOpen.NXMessageBox.DialogType.Warning, 'Вид отсутствует')
+			self.theUI.NXMessageBox.Show('__alarm__template__', NXOpen.NXMessageBox.DialogType.Warning, 'Вид отсутствует %s' %ex)
+		#self.theUI.NXMessageBox.Show('__alarm__template__', NXOpen.NXMessageBox.DialogType.Warning, 'В разработке.')
+		pass
+
+	def rebuildTechRequirements(self, parent):
+		#try: #проверяем наличие вида, если отсутствует - выдаем алерт
+		#	layout = self.workPart.Layouts.FindObject('L1')
+		#	modelingView = self.workPart.ModelingViews.FindObject('ИЗОМЕТРИЧЕСКИЙ')
+		#	layout.ReplaceView(self.workPart.ModelingViews.WorkView, modelingView, True)
+		#	viewOrientation = modelingView.Matrix
+		#	noteIdentifier, noteTag = None, None
+		#	for note in self.workPart.PmiNotes:
+		#		noteIdentifier = note.JournalIdentifier if note.Name in ['ТЕХНИЧЕСКИЕ_ТРЕБОВАНИЯ']
+		#		noteTag = note.Tag if note.Name in ['ТЕХНИЧЕСКИЕ_ТРЕБОВАНИЯ']
+		#		#noteIdentifier = note.JournalIdentifier if note.DisplayName in ['ТЕХНИЧЕСКИЕ_ТРЕБОВАНИЯ']
+		#		#noteTag = note.Tag if note.DisplayName in ['ТЕХНИЧЕСКИЕ_ТРЕБОВАНИЯ']
+		#	#if###########################################################################
+		#except Exception as ex:
+		#	self.theUI.NXMessageBox.Show('__alarm__template__', NXOpen.NXMessageBox.DialogType.Warning, 'Вид отсутствует')
 		pass
 
 	def removeTechRequirements(self, parent):
