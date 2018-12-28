@@ -29,25 +29,34 @@ class Emailer:
 		self.alertLabel = Label()
 		self.buttonSend = ttk.Button(parent, text = 'Создать письмо', command = lambda: self.sendMessage(self))
 		self.buttonSend.pack(side = BOTTOM)
+		###custom variables
+		self.timeStartOfExtra = None
+		self.timeFinishOfExtra = None
+		self.timeDelta = None
+		self.timeDeltaInFact = None
+		self.today = dt.datetime.today().strftime('%d.%m.%Y')
+		self.weekDay = dt.datetime.today().weekday()
+		self.isWeekend = self.weekDay in [5,6]
+		self.FMT = '%d.%m.%Y %H:%M:%S'
+
 
 	def showWeekendTimeEntry(self, master):
 		if self.checkBox_is_active.get():self.subFrame_weekendTime.pack()
 		else: self.subFrame_weekendTime.pack_forget()
-		weekDay = dt.datetime.today().weekday()
-		if weekDay in [5,6]: self.nonWeekendLabel.pack_forget()
-		else:	self.timeStartEntry.pack_forget()
+		if self.isWeekend: self.nonWeekendLabel.pack_forget()
+		else: self.timeStartEntry.pack_forget()
 
 	def sendMessage(self, parent):
-		params = list(self.getTime())
-		subject = 'Переработка - %s' %params[0]
+		if self.getTime() is None: return None
+		subject = 'Переработка - %s' %self.today
 		text = (self.activityTextBox.get('1.0','end-1c')).split('\n')
 		activity = ['<br>%s</br>' %row for row in text]
-		message = ['<br>%s</br>' %params[0],
-					'<br>Ушел в : %s</br>' %params[2],
-					'<br>Переработано: %s ч</br>' %params[3],
-					'<br>Полных часов: %s ч</br>' %params[4],
+		message = ['<br>%s</br>' %self.today,
+					'<br>Ушел в : %s</br>' %self.timeFinishOfExtra.strftime('%H:%M'),
+					'<br>Переработано: %s ч</br>' %self.timeDeltaInFact,
+					'<br>Полных часов: %s ч</br>' %self.timeDelta,
 					'%s' %''.join(activity)]
-		if params[-1]: message.insert(1,'<br>Пришел в: %s</br>' %params[1])
+		if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M'))
 		message = ''.join(message)
 		outlook = win32.Dispatch('outlook.application')
 		mail = outlook.CreateItem(0)
@@ -62,34 +71,29 @@ class Emailer:
 		#mail.send #uncomment if you want to send instead of displaying
 		self.parent.destroy()
 	
-	def getTime(self, weekend = False):
-		FMT = '%d.%m.%Y %H:%M:%S'
-		today = dt.datetime.today().strftime('%d.%m.%Y')
-		weekDay = dt.datetime.today().weekday()
-		if weekDay in [5,6]:
-			weekend = True
+	def getTime(self):
+		if self.isWeekend:
 			stringTime = self.timeStartEntry.get()
 			try:
-				timeStartOfExtra = dt.datetime.strptime('%s %s:00' %(today,stringTime), FMT)
+				self.timeStartOfExtra = dt.datetime.strptime('%s %s:00' %(self.today,stringTime), self.FMT)
 			except:
 				self.alertLabel.pack()
 				self.alertLabel.config(text = 'Вводи время в формате ЧЧ:ММ')
 				self.timeStartEntry.delete(0,END)
 				self.timeStartEntry.focus()
 				return None
-				#закинуть проверку на 4 часа
-		elif weekDay in [4]: timeStartOfExtra = dt.datetime.strptime('%s 16:30:00' %today, FMT)
-		else: timeStartOfExtra = dt.datetime.strptime('%s 17:45:00' %today, FMT)
-		timeFinishOfExtra = dt.datetime.now()
-		timeDelta = timeFinishOfExtra - timeStartOfExtra #боевка
-		if timeDelta > dt.timedelta(minutes=1):
-			timedDeltaInFact = str(timeDelta)[0:4]
-			timeDelta = (str(timeDelta))[0]
+				#закинуть проверку на 4 часа!!!!
+		elif self.weekDay in [4]: self.timeStartOfExtra = dt.datetime.strptime('%s 16:30:00' %self.today, self.FMT)
+		else: self.timeStartOfExtra = dt.datetime.strptime('%s 17:45:00' %self.today, self.FMT)
+		self.timeFinishOfExtra = dt.datetime.now()
+		self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra #боевка
+		if self.timeDelta > dt.timedelta(minutes=1):
+			self.timeDeltaInFact = str(self.timeDelta)[0:4]
+			self.timeDelta = (str(self.timeDelta))[0]
 		else: 
 			self.activityTextBox.delete('1.0', END)
 			self.activityTextBox.insert(END,'Рабочий день еще продолжается')
 			return None
-		return today,timeStartOfExtra.strftime('%H:%M'),timeFinishOfExtra.strftime('%H:%M'),timedDeltaInFact,timeDelta,weekend
 		
 def main():
 	root = Tk()
@@ -97,3 +101,4 @@ def main():
 	root.mainloop()
 
 if __name__ == '__main__':
+	main()
