@@ -17,10 +17,10 @@ class Emailer:
 		self.activityTextBox.pack()
 		self.activityTextBox.focus()
 		self.checkBox_is_active = BooleanVar()
-		self.weekendCheckBox = ttk.Checkbutton(parent, text = 'Работа в выходной день', variable = self.checkBox_is_active)
-		self.weekendCheckBox.config(command = lambda: self.showWeekendTimeEntry(self))
-		self.weekendCheckBox.pack()
-		self.subFrame_weekendTime = LabelFrame(parent, text  = 'Начало раб.дня')
+		#self.weekendCheckBox = ttk.Checkbutton(parent, text = 'Работа в выходной день', variable = self.checkBox_is_active)
+		#self.weekendCheckBox.config(command = lambda: self.showWeekendTimeEntry(self))
+		#self.weekendCheckBox.pack()
+		self.subFrame_weekendTime = LabelFrame(parent, text  = 'Начало рабочего дня в выходной')
 		self.timeStartEntry = Entry(self.subFrame_weekendTime)
 		self.timeStartEntry.pack()
 		self.nonWeekendLabel = Label(self.subFrame_weekendTime)
@@ -38,13 +38,16 @@ class Emailer:
 		self.weekDay = dt.datetime.today().weekday()
 		self.isWeekend = self.weekDay in [5,6]
 		self.FMT = '%d.%m.%Y %H:%M:%S'
+		self.showWeekendTimeEntry(self)
 
 
 	def showWeekendTimeEntry(self, master):
-		if self.checkBox_is_active.get():self.subFrame_weekendTime.pack()
-		else: self.subFrame_weekendTime.pack_forget()
-		if self.isWeekend: self.nonWeekendLabel.pack_forget()
-		else: self.timeStartEntry.pack_forget()
+		if self.isWeekend:
+			self.subFrame_weekendTime.pack()
+			self.nonWeekendLabel.pack_forget()
+		else: 
+			self.timeStartEntry.pack_forget()
+			self.subFrame_weekendTime.pack_forget()
 
 	def sendMessage(self, parent):
 		if self.getTime() is None: return None
