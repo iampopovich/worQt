@@ -10,7 +10,7 @@ class Emailer:
 		##window init
 		self.parent = parent
 		self.parent.resizable(False, False)
-		self.title = parent.title('leaver')
+		self.title = parent.title('leaver v1.1')
 		self.frame_activity = LabelFrame(parent, text = 'Активность')
 		self.frame_activity.pack()
 		self.activityTextBox = Text(self.frame_activity, height = 10, width = 40, font = 'arial 10',wrap = WORD)
@@ -95,8 +95,9 @@ class Emailer:
 			self.timeDelta = (str(self.timeDelta))[0]
 		else: 
 			self.activityTextBox.delete('1.0', END)
-			self.activityTextBox.insert(END,'Рабочий день еще продолжается')
+			self.activityTextBox.insert(END,'Рабочий день еще продолжается')			
 			return None
+		return 1
 		
 def main():
 	root = Tk()
