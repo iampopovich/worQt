@@ -10,22 +10,22 @@ class Emailer:
 		##window init
 		self.parent = parent
 		self.parent.resizable(False, False)
-		self.title = parent.title('leaver v1.1')
+		self.title = parent.title('leaver')
 		self.frame_activity = LabelFrame(parent, text = 'Активность')
 		self.frame_activity.pack()
 		self.activityTextBox = Text(self.frame_activity, height = 10, width = 40, font = 'arial 10',wrap = WORD)
 		self.activityTextBox.pack()
 		self.activityTextBox.focus()
 		self.checkBox_is_active = BooleanVar()
-		#self.weekendCheckBox = ttk.Checkbutton(parent, text = 'Работа в выходной день', variable = self.checkBox_is_active)
-		#self.weekendCheckBox.config(command = lambda: self.showWeekendTimeEntry(self))
-		#self.weekendCheckBox.pack()
+		# self.weekendCheckBox = ttk.Checkbutton(parent, text = 'Работа в выходной день', variable = self.checkBox_is_active)
+		# self.weekendCheckBox.config(command = lambda: self.showWeekendTimeEntry(self))
+		# self.weekendCheckBox.pack()
 		self.subFrame_weekendTime = LabelFrame(parent, text  = 'Начало рабочего дня в выходной')
 		self.timeStartEntry = Entry(self.subFrame_weekendTime)
 		self.timeStartEntry.pack()
-		self.nonWeekendLabel = Label(self.subFrame_weekendTime)
-		self.nonWeekendLabel.config(text = 'Это точно не сегодня')
-		self.nonWeekendLabel.pack()
+		# self.nonWeekendLabel = Label(self.subFrame_weekendTime)
+		# self.nonWeekendLabel.config(text = 'Это точно не сегодня')
+		# self.nonWeekendLabel.pack()
 		self.alertLabel = Label()
 		self.buttonSend = ttk.Button(parent, text = 'Создать письмо', command = lambda: self.sendMessage(self))
 		self.buttonSend.pack(side = BOTTOM)
@@ -40,11 +40,9 @@ class Emailer:
 		self.FMT = '%d.%m.%Y %H:%M:%S'
 		self.showWeekendTimeEntry(self)
 
-
 	def showWeekendTimeEntry(self, master):
 		if self.isWeekend:
 			self.subFrame_weekendTime.pack()
-			self.nonWeekendLabel.pack_forget()
 		else: 
 			self.timeStartEntry.pack_forget()
 			self.subFrame_weekendTime.pack_forget()
@@ -95,9 +93,8 @@ class Emailer:
 			self.timeDelta = (str(self.timeDelta))[0]
 		else: 
 			self.activityTextBox.delete('1.0', END)
-			self.activityTextBox.insert(END,'Рабочий день еще продолжается')			
+			self.activityTextBox.insert(END,'Рабочий день еще продолжается')
 			return None
-		return 1
 		
 def main():
 	root = Tk()
