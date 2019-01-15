@@ -58,6 +58,10 @@ class Ui_Dialog(object):
 		self.checkBox.stateChanged.connect(self.switchWeekendTimeEntry)
 		self.checkBox.setEnabled(self.isWeekend)
 		self.gridLayout.addWidget(self.checkBox, 3, 0, 1, 1)
+		self.checkBox_3 = QtWidgets.QCheckBox(self.gridLayoutWidget)
+		self.checkBox_3.setObjectName("checkBox_3")
+		self.gridLayout.addWidget(self.checkBox_3, 5, 0, 1, 1)
+		self.checkBox_3.stateChanged.connect(self.earlyBirdy)
 		self.informationLabel = QtWidgets.QLabel(self.gridLayoutWidget)
 		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.informationLabel.setObjectName("informationLabel")
@@ -73,6 +77,7 @@ class Ui_Dialog(object):
 		Dialog.setWindowTitle(_translate("Dialog", "WorQt"))
 		self.timeEdit.setDisplayFormat(_translate("Dialog", "HH:mm:ss"))
 		self.pushButton.setText(_translate("Dialog", "Отправить"))
+		self.checkBox_3.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.checkBox_2.setText(_translate("Dialog", "Пришел позже 8:30"))
 		self.checkBox.setText(_translate("Dialog", "Работа в выходной"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
@@ -81,26 +86,39 @@ class Ui_Dialog(object):
 		if self.checkBox.checkState(): 
 			self.pushButton.setEnabled(True)
 			self.checkBox_2.setEnabled(False)
+			self.checkBox_3.setEnabled(False)
 		else:
 			self.checkBox_2.setEnabled(True)
+			self.checkBox_3.setEnabled(True)
 			self.pushButton.setEnabled(False)
 	
 	def sorryImLate(self):
 		if self.checkBox_2.checkState(): 
 			self.checkBox.setEnabled(False)
-			self.pushButton.setEnabled(True)
 			self.timeEdit.setEnabled(False)
+			self.checkBox_3.setEnabled(False)
+			self.pushButton.setEnabled(True)
 		else:
-			self.pushButton.setEnabled(False)
 			self.checkBox.setEnabled(self.isWeekend)
 			self.timeEdit.setEnabled(self.isWeekend)
+			self.checkBox_3.setEnabled(True)
+			self.pushButton.setEnabled(False)
+
+	def earlyBirdy(self,parent):
+		if self.checkBox_3.checkState(): 
+			self.checkBox_2.setEnabled(False)
+			self.pushButton.setEnabled(True)
+		else:
+			self.checkBox_2.setEnabled(True)
+			self.pushButton.setEnabled(False)
+		pass
 
 	def getTime(self, mode):
 		today = self.today.strftime("%d.%m.%Y")
-		if mode:
+		if mode == 2:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
 			self.timeDeltaLate = dt.datetime.now() - workDayStart
-		else:
+		elif mode == 1:
 			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
 			elif self.weekday in [4]: self.timeStartOfExtra = dt.datetime.strptime("%s 16:30:00" %self.today.date(), self.FMT)
 			else:  self.timeStartOfExtra = dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT)
@@ -116,13 +134,16 @@ class Ui_Dialog(object):
 				self.informationLabel.setText("Отработка меньше 4 часов в выходной")			
 				return None
 			if self.isWeekend and self.timeDelta < dt.timedelta(hours = 1): 
-				self.informationLabel.setText("Отработка меньше 1 часа в в будний день")			
+				self.informationLabel.setText("Отработка меньше 1 часа в будний день")			
 				return None
+		elif mode == 3:
+			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
+			self.timeDeltaLate = workDayStart - dt.datetime.now() 
 
 	def sendMessage(self, parent):
 		today = self.today.strftime("%d.%m.%Y")
 		if self.checkBox_2.checkState():
-			self.getTime(True)
+			self.getTime(2)
 			subject = 'Выход на работу - %s' %today
 			message = ['<br>%s</br>' %today,
 						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
@@ -138,6 +159,12 @@ class Ui_Dialog(object):
 						'<br>Полных часов: %s ч</br>' %str(self.timeDelta)[0],
 						'%s' %(''.join(activity))]
 			if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M'))
+		elif self.checkBox_3.checkState():
+			self.getTime(3)
+			subject = 'Переработка - %s' %today
+			message = ['<br>%s</br>' %today,
+						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
+						'<br>Пришел раньше на : %s</br>' %str(self.timeDeltaLate)[0:7]]	
 		message = ''.join(message)
 		outlook = win32.Dispatch('outlook.application')
 		mail = outlook.CreateItem(0)
