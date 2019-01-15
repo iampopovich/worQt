@@ -40,7 +40,6 @@ class Ui_Dialog(object):
 		self.pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton.setObjectName("pushButton")
 		self.pushButton.setText("Отправить письмо")
-		self.pushButton.setEnabled(False)
 		self.pushButton.clicked.connect(self.sendMessage)
 		self.gridLayout.addWidget(self.pushButton, 4, 2, 1, 1)
 		self.textEdit = QtWidgets.QTextEdit(self.gridLayoutWidget)
@@ -52,16 +51,18 @@ class Ui_Dialog(object):
 		self.checkBox_2 = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox_2.setObjectName("checkBox_2")
 		self.checkBox_2.stateChanged.connect(self.sorryImLate)
+		self.checkBox_2.setEnabled(not self.isWeekend)
 		self.gridLayout.addWidget(self.checkBox_2, 4, 0, 1, 1)
 		self.checkBox = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox.setObjectName("checkBox")
 		self.checkBox.stateChanged.connect(self.switchWeekendTimeEntry)
-		self.checkBox.setEnabled(self.isWeekend)
+		#self.checkBox.setEnabled(self.isWeekend)
 		self.gridLayout.addWidget(self.checkBox, 3, 0, 1, 1)
 		self.checkBox_3 = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox_3.setObjectName("checkBox_3")
-		self.gridLayout.addWidget(self.checkBox_3, 5, 0, 1, 1)
+		self.checkBox_3.setEnabled(not self.isWeekend)
 		self.checkBox_3.stateChanged.connect(self.earlyBirdy)
+		self.gridLayout.addWidget(self.checkBox_3, 5, 0, 1, 1)
 		self.informationLabel = QtWidgets.QLabel(self.gridLayoutWidget)
 		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.informationLabel.setObjectName("informationLabel")
@@ -82,36 +83,21 @@ class Ui_Dialog(object):
 		self.checkBox.setText(_translate("Dialog", "Работа в выходной"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
 
-	def switchWeekendTimeEntry(self):
-		if self.checkBox.checkState(): 
-			self.pushButton.setEnabled(True)
-			self.checkBox_2.setEnabled(False)
-			self.checkBox_3.setEnabled(False)
-		else:
-			self.checkBox_2.setEnabled(True)
-			self.checkBox_3.setEnabled(True)
-			self.pushButton.setEnabled(False)
+	def switchWeekendTimeEntry(self): #заменить на евент апдейта
+		flag = self.checkBox.checkState() 
+		self.timeEdit.setEnabled(flag)
+		self.checkBox_2.setEnabled(not flag)
+		self.checkBox_3.setEnabled(not flag)
 	
 	def sorryImLate(self):
-		if self.checkBox_2.checkState(): 
-			self.checkBox.setEnabled(False)
-			self.timeEdit.setEnabled(False)
-			self.checkBox_3.setEnabled(False)
-			self.pushButton.setEnabled(True)
-		else:
-			self.checkBox.setEnabled(self.isWeekend)
-			self.timeEdit.setEnabled(self.isWeekend)
-			self.checkBox_3.setEnabled(True)
-			self.pushButton.setEnabled(False)
+		flag = self.checkBox_2.checkState()
+		self.checkBox.setEnabled(not flag)
+		self.checkBox_3.setEnabled(not flag)
 
 	def earlyBirdy(self,parent):
-		if self.checkBox_3.checkState(): 
-			self.checkBox_2.setEnabled(False)
-			self.pushButton.setEnabled(True)
-		else:
-			self.checkBox_2.setEnabled(True)
-			self.pushButton.setEnabled(False)
-		pass
+		flag = self.checkBox_3.checkState()
+		self.checkBox.setEnabled(not flag) 
+		self.checkBox_2.setEnabled(not flag)
 
 	def getTime(self, mode):
 		today = self.today.strftime("%d.%m.%Y")
@@ -127,18 +113,20 @@ class Ui_Dialog(object):
 			if self.timeDelta > dt.timedelta(minutes = 1): return None
 			if self.timeDelta < dt.timedelta(minutes = 1):
 				self.informationLabel.setText("Рабочий день еще продолжается")
-				self.pushButton.setEnabled(False)
 				return None
 			if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
 				self.informationLabel.autoFillBackground
 				self.informationLabel.setText("Отработка меньше 4 часов в выходной")			
 				return None
 			if self.isWeekend and self.timeDelta < dt.timedelta(hours = 1): 
-				self.informationLabel.setText("Отработка меньше 1 часа в будний день")			
+				self.informationLabel.setText("Отработка меньше 1 часа в в будний день")			
 				return None
 		elif mode == 3:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
-			self.timeDeltaLate = workDayStart - dt.datetime.now() 
+			self.timeDeltaLate = workDayStart - dt.datetime.now()
+			if self.timeDeltaLate < dt.timedelta(seconds = 0):
+				self.informationLabel.setText("Рабочий день еще не начался")			
+				return None
 
 	def sendMessage(self, parent):
 		today = self.today.strftime("%d.%m.%Y")
@@ -148,8 +136,14 @@ class Ui_Dialog(object):
 			message = ['<br>%s</br>' %today,
 						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
 						'<br>Пришел позже на : %s</br>' %str(self.timeDeltaLate)[0:7]]
-		elif self.checkBox.checkState():
-			self.getTime(False)
+		elif self.checkBox_3.checkState():
+			self.getTime(3)
+			subject = 'Переработка - %s' %today
+			message = ['<br>%s</br>' %today,
+						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
+						'<br>Пришел раньше на : %s</br>' %str(self.timeDeltaLate)[0:7]]	
+		else:
+			self.getTime(1)
 			subject = 'Переработка - %s' %today
 			text = (self.textEdit.toPlainText()).split('\n')
 			activity = ['<br>%s</br>' %row for row in text]
@@ -159,12 +153,6 @@ class Ui_Dialog(object):
 						'<br>Полных часов: %s ч</br>' %str(self.timeDelta)[0],
 						'%s' %(''.join(activity))]
 			if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M'))
-		elif self.checkBox_3.checkState():
-			self.getTime(3)
-			subject = 'Переработка - %s' %today
-			message = ['<br>%s</br>' %today,
-						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
-						'<br>Пришел раньше на : %s</br>' %str(self.timeDeltaLate)[0:7]]	
 		message = ''.join(message)
 		outlook = win32.Dispatch('outlook.application')
 		mail = outlook.CreateItem(0)
@@ -177,7 +165,7 @@ class Ui_Dialog(object):
 		mail.HTMLbody = mail.HTMLbody[:index + 1] + message + mail.HTMLbody[index + 1:] 
 		mail.Display(True)
 		#mail.send #uncomment if you want to send instead of displaying
-		sys.exit(app.exec_())
+		#sys.exit(app.exec_())
 		#else: sys.exit(app.exec_())
 
 if __name__ == "__main__":
