@@ -4,13 +4,14 @@ import re
 import datetime as dt
 import win32com.client as win32  
 import random 
+import urllib.request
 
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
-		self.isWeekend = True if self.weekday in [5,6] else False
+		self.isWeekend = self.checkIsWeekend() #True if self.weekday in [5,6] else False
 		self.timeStartOfExtra = None
 		self.timeFinishOfExtra = None
 		self.timeDelta = None
@@ -56,7 +57,7 @@ class Ui_Dialog(object):
 		self.checkBox = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox.setObjectName("checkBox")
 		self.checkBox.stateChanged.connect(self.switchWeekendTimeEntry)
-		#self.checkBox.setEnabled(self.isWeekend)
+		self.checkBox.setEnabled(self.isWeekend)
 		self.gridLayout.addWidget(self.checkBox, 3, 0, 1, 1)
 		self.checkBox_3 = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox_3.setObjectName("checkBox_3")
@@ -98,6 +99,17 @@ class Ui_Dialog(object):
 		flag = self.checkBox_3.checkState()
 		self.checkBox.setEnabled(not flag) 
 		self.checkBox_2.setEnabled(not flag)
+
+	def checkIsWeekend(self):
+		today = self.today.strftime("%d%m%y")
+		try:
+			request = urllib.request.urlopen('http://isdayoff.ru/%s' %today)
+			request = int(request.read().decode('utf-8'))
+			print(request)
+			outVal = True if request in [1] else False
+		except:
+			outVal = True if self.weekday in [5,6] else False
+		return outVal 
 
 	def getTime(self, mode):
 		today = self.today.strftime("%d.%m.%Y")
