@@ -101,11 +101,10 @@ class Ui_Dialog(object):
 		self.checkBox_2.setEnabled(not flag)
 
 	def checkIsWeekend(self):
-		today = self.today.strftime("%d%m%y")
+		today = self.today.strftime("%Y%m%d")
 		try:
 			request = urllib.request.urlopen('http://isdayoff.ru/%s' %today)
 			request = int(request.read().decode('utf-8'))
-			print(request)
 			outVal = True if request in [1] else False
 		except:
 			outVal = True if self.weekday in [5,6] else False
