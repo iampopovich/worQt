@@ -5,13 +5,14 @@ import datetime as dt
 import win32com.client as win32  
 import random 
 import urllib.request
+import ssl
 
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
-		self.isWeekend = self.checkIsWeekend() #True if self.weekday in [5,6] else False
+		self.isWeekend = self.checkIsWeekend()
 		self.timeStartOfExtra = None
 		self.timeFinishOfExtra = None
 		self.timeDelta = None
@@ -23,7 +24,6 @@ class Ui_Dialog(object):
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
 		Dialog.setFixedSize(370, 380)
-		# Dialog.resize(370, 380)
 		self.gridLayoutWidget = QtWidgets.QWidget(Dialog)
 		self.gridLayoutWidget.setGeometry(QtCore.QRect(9, 9, 351, 361))
 		self.gridLayoutWidget.setObjectName("gridLayoutWidget")
@@ -103,9 +103,11 @@ class Ui_Dialog(object):
 	def checkIsWeekend(self):
 		today = self.today.strftime("%Y%m%d")
 		try:
-			request = urllib.request.urlopen('http://isdayoff.ru/%s' %today)
-			request = int(request.read().decode('utf-8'))
-			outVal = True if request in [1] else False
+			scontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+			chemeo_search_url = 'https://isdayoff.ru/%s' %today
+			response = urllib.request.urlopen(chemeo_search_url, context=scontext)
+			response = int(response.read().decode('utf-8'))
+			outVal = True if response in [1] else False
 		except:
 			outVal = True if self.weekday in [5,6] else False
 		return outVal 
