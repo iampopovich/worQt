@@ -12,6 +12,7 @@ class Ui_Dialog(object):
 		# glob variables 
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
+		self.weekendSync = False
 		self.isWeekend = self.checkIsWeekend()
 		self.timeStartOfExtra = None
 		self.timeFinishOfExtra = None
@@ -87,9 +88,11 @@ class Ui_Dialog(object):
 	def switchWeekendTimeEntry(self): #заменить на евент апдейта
 		flag = self.checkBox.checkState() 
 		self.timeEdit.setEnabled(flag)
-		self.checkBox_2.setEnabled(not flag)
-		self.checkBox_3.setEnabled(not flag)
-	
+		if self.weekendSync: pass
+		else:
+			self.checkBox_2.setEnabled(not flag)
+			self.checkBox_3.setEnabled(not flag)
+
 	def sorryImLate(self):
 		flag = self.checkBox_2.checkState()
 		self.checkBox.setEnabled(not flag)
@@ -108,6 +111,7 @@ class Ui_Dialog(object):
 			response = urllib.request.urlopen(chemeo_search_url, context=scontext)
 			response = int(response.read().decode('utf-8'))
 			outVal = True if response in [1] else False
+			self.weekendSync = True
 		except:
 			outVal = True if self.weekday in [5,6] else False
 		return outVal 
