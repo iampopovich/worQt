@@ -117,35 +117,34 @@ class Ui_Dialog(object):
 			else:  self.timeStartOfExtra = dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT)
 			self.timeFinishOfExtra = dt.datetime.now()
 			self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
-			if self.timeDelta > dt.timedelta(minutes = 1): return None
-			if self.timeDelta < dt.timedelta(minutes = 1):
-				self.informationLabel.setText("Рабочий день еще продолжается")
-				return None
 			if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
 				self.informationLabel.autoFillBackground
 				self.informationLabel.setText("Отработка меньше 4 часов в выходной")			
 				return None
-			if self.isWeekend and self.timeDelta < dt.timedelta(hours = 1): 
+			if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
 				self.informationLabel.setText("Отработка меньше 1 часа в в будний день")			
 				return None
-		
+			if self.timeDelta < dt.timedelta(minutes = 1):
+				self.informationLabel.setText("Рабочий день еще продолжается")
+				return None
+			if self.timeDelta > dt.timedelta(minutes = 1): return True
 
 	def sendMessage(self, parent):
 		today = self.today.strftime("%d.%m.%Y")
 		if self.checkBox_2.checkState():
-			self.getTime(2)
+			if self.getTime(2) is None: return None
 			subject = 'Выход на работу - %s' %today
 			message = ['<br>%s</br>' %today,
 						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
-						'<br>Пришел позже на : %s</br>' %str(self.timeDeltaLate)[0:7]]
+						'<br>Пришел позже на : %s</br>' %str(self.timeDeltaLate)[0:8]]
 		elif self.checkBox_3.checkState():
-			self.getTime(3)
+			if self.getTime(3) is None: return None
 			subject = 'Переработка - %s' %today
 			message = ['<br>%s</br>' %today,
 						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
 						'<br>Пришел раньше на : %s</br>' %str(self.timeDeltaLate)[0:8]]	
 		else:
-			self.getTime(1)
+			if self.getTime(1) is None: return None
 			subject = 'Переработка - %s' %today
 			text = (self.textEdit.toPlainText()).split('\n')
 			activity = ['<br>%s</br>' %row for row in text]
@@ -158,8 +157,8 @@ class Ui_Dialog(object):
 		message = ''.join(message)
 		outlook = win32.Dispatch('outlook.application')
 		mail = outlook.CreateItem(0)
-		mail.To = '---------------------------'
-		mail.CC = '---------------------------'
+		mail.To = ''
+		mail.CC = ''
 		mail.Subject = subject
 		mail.GetInspector 
 		#mail.Body = message
