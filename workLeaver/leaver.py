@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+'''
+new features
+добавить аттачменты
+править шероховатости в шаблоне сообщений
+'''
 from PyQt5 import QtCore, QtGui, QtWidgets
 import re
 import datetime as dt
@@ -25,13 +30,18 @@ class Ui_Dialog(object):
 		############################################
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
-		Dialog.setFixedSize(370, 380)
+		Dialog.setFixedSize(370, 370)
 		self.gridLayoutWidget = QtWidgets.QWidget(Dialog)
-		self.gridLayoutWidget.setGeometry(QtCore.QRect(9, 9, 351, 361))
+		self.gridLayoutWidget.setGeometry(QtCore.QRect(7, 3, 350, 360))
 		self.gridLayoutWidget.setObjectName("gridLayoutWidget")
 		self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
 		self.gridLayout.setContentsMargins(0, 0, 0, 0)
 		self.gridLayout.setObjectName("gridLayout")
+		
+		self.label = QtWidgets.QLabel(self.gridLayoutWidget)
+		self.label.setObjectName("label")
+		self.gridLayout.addWidget(self.label, 3, 0, 1, 1)
+
 		self.timeEdit = QtWidgets.QTimeEdit(self.gridLayoutWidget)
 		self.timeEdit.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.timeEdit.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
@@ -65,9 +75,32 @@ class Ui_Dialog(object):
 		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.informationLabel.setObjectName("informationLabel")
 		self.gridLayout.addWidget(self.informationLabel, 1, 0, 1, 3)
-		self.label = QtWidgets.QLabel(self.gridLayoutWidget)
-		self.label.setObjectName("label")
-		self.gridLayout.addWidget(self.label, 3, 0, 1, 1)
+
+		self.listWidget = QtWidgets.QListWidget(self.gridLayoutWidget)
+		self.listWidget.setObjectName("listWidget")
+		self.gridLayout.addWidget(self.listWidget,6,0,3,1)
+
+		self.pushButton1 = QtWidgets.QPushButton(self.gridLayoutWidget)
+		self.pushButton1.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.pushButton1.setObjectName("pushButton1")
+		self.pushButton1.setText("+")
+		self.pushButton1.clicked.connect(self.addAttachment)
+		self.gridLayout.addWidget(self.pushButton1,6,2,1,1)
+
+		self.pushButton2 = QtWidgets.QPushButton(self.gridLayoutWidget)
+		self.pushButton2.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.pushButton2.setObjectName("pushButton2")
+		self.pushButton2.setText("-")
+		self.pushButton2.clicked.connect(self.removeAttachment)
+		self.gridLayout.addWidget(self.pushButton2,7,2,1,1)
+
+		self.pushButton3 = QtWidgets.QPushButton(self.gridLayoutWidget)
+		self.pushButton3.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.pushButton3.setObjectName("pushButton3")
+		self.pushButton3.setText("Очистить")
+		self.pushButton3.clicked.connect(self.clearAttachment)
+		self.gridLayout.addWidget(self.pushButton3,8,2,1,1)
+		
 		self.retranslateUi(Dialog)
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
@@ -79,6 +112,23 @@ class Ui_Dialog(object):
 		self.checkBox_3.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.checkBox_2.setText(_translate("Dialog", "Пришел позже 8:30"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
+
+	def addAttachment(self, parent):
+		attachment = QtWidgets.QFileDialog.getOpenFileName()[0]
+		self.listWidget.addItem(attachment)
+		pass
+
+	def removeAttachment(self, parent):
+		try: #https://stackoverflow.com/questions/23835847/how-to-remove-item-from-qlistwidget/23836142
+			listItems = self.listWidget.selectedItems()
+			if not listItems: return
+			for item in listItems:
+				self.listWidget.takeItem(self.listWidget.row(item))
+		except: pass
+	
+	def clearAttachment(self, parent):
+		try: self.listWidget.clear()
+		except: pass
 
 	def sorryImLate(self):
 		flag = self.checkBox_2.checkState()
@@ -100,16 +150,17 @@ class Ui_Dialog(object):
 		except:	outVal = True if self.weekday in [5,6] else False
 		return outVal 
 
-	def getTime(self, mode = 1):
+	def getTime(self, mode):
 		today = self.today.strftime("%d.%m.%Y")
 		if mode == 2:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
 			self.timeDeltaLate = dt.datetime.now() - workDayStart
+			return True
 		elif mode == 3:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
 			self.timeDeltaLate = workDayStart - dt.datetime.now()
 			if self.timeDeltaLate < dt.timedelta(seconds = 0):
-				self.informationLabel.setText("Рабочий день еще не начался")			
+				self.informationLabel.setText("Уже слишком поздно")			
 				return None
 		else:
 			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
@@ -159,6 +210,9 @@ class Ui_Dialog(object):
 		mail = outlook.CreateItem(0)
 		mail.To = ''
 		mail.CC = ''
+		for i in range(self.listWidget.count()):
+			attachment = self.listWidget.item(i).text()
+			mail.Attachments.Add(attachment)
 		mail.Subject = subject
 		mail.GetInspector 
 		#mail.Body = message
@@ -175,7 +229,7 @@ if __name__ == "__main__":
 	Dialog = QtWidgets.QDialog()
 	ui = Ui_Dialog()
 	ui.setupUi(Dialog)
-	ui.getTime()
+	#ui.getTime()
 	Dialog.show()
 	sys.exit(app.exec_())
 
