@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
 new features
-добавить аттачменты
 править шероховатости в шаблоне сообщений
 '''
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -70,7 +69,7 @@ class Ui_Dialog(object):
 		self.checkBox_3.setObjectName("checkBox_3")
 		self.checkBox_3.setEnabled(not self.isWeekend)
 		self.checkBox_3.stateChanged.connect(self.earlyBirdy)
-		self.gridLayout.addWidget(self.checkBox_3, 5, 0, 1, 1)
+		self.gridLayout.addWidget(self.checkBox_3, 4, 1, 1, 1)
 		self.informationLabel = QtWidgets.QLabel(self.gridLayoutWidget)
 		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.informationLabel.setObjectName("informationLabel")
@@ -78,7 +77,7 @@ class Ui_Dialog(object):
 
 		self.listWidget = QtWidgets.QListWidget(self.gridLayoutWidget)
 		self.listWidget.setObjectName("listWidget")
-		self.gridLayout.addWidget(self.listWidget,6,0,3,1)
+		self.gridLayout.addWidget(self.listWidget,6,0,3,2)
 
 		self.pushButton1 = QtWidgets.QPushButton(self.gridLayoutWidget)
 		self.pushButton1.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
@@ -109,8 +108,8 @@ class Ui_Dialog(object):
 		Dialog.setWindowTitle(_translate("Dialog", "WorQt"))
 		self.timeEdit.setDisplayFormat(_translate("Dialog", "HH:mm:ss"))
 		self.pushButton.setText(_translate("Dialog", "Отправить"))
-		self.checkBox_3.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.checkBox_2.setText(_translate("Dialog", "Пришел позже 8:30"))
+		self.checkBox_3.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
 
 	def addAttachment(self, parent):
@@ -154,7 +153,10 @@ class Ui_Dialog(object):
 		today = self.today.strftime("%d.%m.%Y")
 		if mode == 2:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
-			self.timeDeltaLate = dt.datetime.now() - workDayStart
+			if dt.datetime.now() > dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT):
+				self.informationLabel.setText("Уже слишком поздно")			
+				return None
+			else: self.timeDeltaLate = dt.datetime.now() - workDayStart
 			return True
 		elif mode == 3:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
