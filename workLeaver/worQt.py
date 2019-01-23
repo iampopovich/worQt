@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 new features
+добавить аттачменты
 править шероховатости в шаблоне сообщений
 '''
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -23,6 +24,7 @@ class Ui_Dialog(object):
 		self.timeFinishOfExtra = None
 		self.timeDelta = None
 		self.timeDeltaLate = None
+		self.timeDeltaBefore = None
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		# self.workForFree = False
 		self.color = ['red','green','blue','black']
@@ -108,6 +110,9 @@ class Ui_Dialog(object):
 		Dialog.setWindowTitle(_translate("Dialog", "WorQt"))
 		self.timeEdit.setDisplayFormat(_translate("Dialog", "HH:mm:ss"))
 		self.pushButton.setText(_translate("Dialog", "Отправить"))
+		self.pushButton1.setText(_translate("Dialog", "+"))
+		self.pushButton2.setText(_translate("Dialog", "-"))
+		self.pushButton3.setText(_translate("Dialog", "Очистить"))
 		self.checkBox_2.setText(_translate("Dialog", "Пришел позже 8:30"))
 		self.checkBox_3.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
@@ -142,7 +147,7 @@ class Ui_Dialog(object):
 		try:
 			scontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 			chemeo_search_url = 'https://isdayoff.ru/%s' %today
-			response = urllib.request.urlopen(chemeo_search_url, context=scontext)
+			response = urllib.request.urlopen(chemeo_search_url, context = scontext, timeout = 5)
 			response = int(response.read().decode('utf-8'))
 			outVal = True if response in [1] else False
 			self.weekendSync = True
@@ -160,8 +165,8 @@ class Ui_Dialog(object):
 			return True
 		elif mode == 3:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
-			self.timeDeltaLate = workDayStart - dt.datetime.now()
-			if self.timeDeltaLate < dt.timedelta(seconds = 0):
+			self.timeDeltaBefore = workDayStart - dt.datetime.now()
+			if self.timeDeltaBefore < dt.timedelta(seconds = 0):
 				self.informationLabel.setText("Уже слишком поздно")			
 				return None
 		else:
@@ -182,6 +187,13 @@ class Ui_Dialog(object):
 				return None
 			if self.timeDelta > dt.timedelta(minutes = 1): return True
 
+	def extractTimeFormat(self,tdelta):
+		d = {}
+		d['days'] = tdelta.days
+		d['hrs'], rem = divmod(tdelta.seconds, 3600)
+		d['min'], d['sec'] = divmod(rem, 60)
+		return ('%s:%s:%s' %(d['hrs'],d['min'],d['sec']))
+
 	def sendMessage(self, parent):
 		today = self.today.strftime("%d.%m.%Y")
 		if self.checkBox_2.checkState():
@@ -189,13 +201,13 @@ class Ui_Dialog(object):
 			subject = 'Выход на работу - %s' %today
 			message = ['<br>%s</br>' %today,
 						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
-						'<br>Пришел позже на : %s</br>' %str(self.timeDeltaLate)[0:8]]
+						'<br>Пришел позже на : %s</br>' %self.extractTimeFormat(self.timeDeltaLate)]	
 		elif self.checkBox_3.checkState():
 			if self.getTime(3) is None: return None
 			subject = 'Переработка - %s' %today
 			message = ['<br>%s</br>' %today,
 						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
-						'<br>Пришел раньше на : %s</br>' %str(self.timeDeltaLate)[0:8]]	
+						'<br>Пришел раньше на : %s</br>' %self.extractTimeFormat(self.timeDeltaBefore)]	
 		else:
 			if self.getTime(1) is None: return None
 			subject = 'Переработка - %s' %today
@@ -203,7 +215,7 @@ class Ui_Dialog(object):
 			activity = ['<br>%s</br>' %row for row in text]
 			message = ['<br>%s</br>' %today,
 						'<br>Ушел в : %s</br>' %self.timeFinishOfExtra.strftime('%H:%M:%S'),
-						'<br>Переработано: %s ч</br>' %str(self.timeDelta)[0:8],
+						'<br>Переработано: %s ч</br>' %self.extractTimeFormat(self.timeDelta), #extra dot
 						'<br>Полных часов: %s ч</br>' %str(math.floor(self.timeDelta.seconds / 3600)),
 						'%s' %(''.join(activity))]
 			if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
