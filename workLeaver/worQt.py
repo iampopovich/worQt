@@ -169,6 +169,7 @@ class Ui_Dialog(object):
 			if self.timeDeltaBefore < dt.timedelta(seconds = 0):
 				self.informationLabel.setText("Уже слишком поздно")			
 				return None
+			return True
 		else:
 			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
 			elif self.weekday in [4]: self.timeStartOfExtra = dt.datetime.strptime("%s 16:30:00" %self.today.date(), self.FMT)
@@ -243,7 +244,6 @@ if __name__ == "__main__":
 	Dialog = QtWidgets.QDialog()
 	ui = Ui_Dialog()
 	ui.setupUi(Dialog)
-	#ui.getTime()
 	Dialog.show()
 	sys.exit(app.exec_())
 
