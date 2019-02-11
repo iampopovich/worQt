@@ -8,26 +8,30 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import re
 import datetime as dt
 import win32com.client as win32  
+import pythoncom
 import random 
 import urllib.request
+import multiprocessing
+import threading
 import ssl
 import math
 
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
+		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
 		self.isWeekend = self.checkIsWeekend()
+		self.isLate = dt.datetime.now() > dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
+		self.isBeforeStart = dt.datetime.now() < dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
 		self.timeStartOfExtra = None
 		self.timeFinishOfExtra = None
 		self.timeDelta = None
 		self.timeDeltaLate = None
 		self.timeDeltaBefore = None
-		self.FMT = "%Y-%m-%d %H:%M:%S"
-		# self.workForFree = False
-		self.color = ['red','green','blue','black']
+		self.workForFree = ""
 		############################################
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
@@ -65,12 +69,13 @@ class Ui_Dialog(object):
 		self.checkBox_2 = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox_2.setObjectName("checkBox_2")
 		self.checkBox_2.stateChanged.connect(self.sorryImLate)
-		self.checkBox_2.setEnabled(not self.isWeekend)
+		self.checkBox_2.setEnabled(not self.isWeekend if self.isWeekend else self.isLate)
 		self.gridLayout.addWidget(self.checkBox_2, 4, 0, 1, 1)
 		self.checkBox_3 = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox_3.setObjectName("checkBox_3")
-		self.checkBox_3.setEnabled(not self.isWeekend)
+		self.checkBox_3.setEnabled(not self.isWeekend if self.isWeekend else self.isBeforeStart)
 		self.checkBox_3.stateChanged.connect(self.earlyBirdy)
+		
 		self.gridLayout.addWidget(self.checkBox_3, 4, 1, 1, 1)
 		self.informationLabel = QtWidgets.QLabel(self.gridLayoutWidget)
 		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
@@ -159,16 +164,16 @@ class Ui_Dialog(object):
 		if mode == 2:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
 			if dt.datetime.now() > dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT):
-				self.informationLabel.setText("Уже слишком поздно")			
+				self.informationLabel.setText("Уже слишком поздно")
 				return None
 			else: self.timeDeltaLate = dt.datetime.now() - workDayStart
 			return True
 		elif mode == 3:
 			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
 			self.timeDeltaBefore = workDayStart - dt.datetime.now()
-			if self.timeDeltaBefore < dt.timedelta(seconds = 0):
-				self.informationLabel.setText("Уже слишком поздно")			
-				return None
+			# if self.timeDeltaBefore < dt.timedelta(seconds = 0):
+				# self.informationLabel.setText("Уже слишком поздно")			
+				# return None
 			return True
 		else:
 			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
@@ -176,18 +181,17 @@ class Ui_Dialog(object):
 			else:  self.timeStartOfExtra = dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT)
 			self.timeFinishOfExtra = dt.datetime.now()
 			self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
-			if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
-				self.informationLabel.autoFillBackground
-				self.informationLabel.setText("Отработка меньше 4 часов в выходной")			
-				return None
-			if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
-				self.informationLabel.setText("Отработка меньше 1 часа в в будний день")			
-				return None
-			if self.timeDelta < dt.timedelta(minutes = 1):
+			if self.timeDelta < dt.timedelta(seconds = 1):
 				self.informationLabel.setText("Рабочий день еще продолжается")
 				return None
-			if self.timeDelta > dt.timedelta(minutes = 1): return True
-
+			if self.timeDelta > dt.timedelta(seconds = 1): 
+				if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
+					self.workForFree = "Отработка меньше 4 часов в выходной"			
+					return True
+				if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
+					self.workForFree = "Отработка меньше 1 часа в в будний день"	
+					return True
+				
 	def extractTimeFormat(self,tdelta):
 		d = {}
 		d['days'] = tdelta.days
@@ -218,7 +222,7 @@ class Ui_Dialog(object):
 						'<br>Ушел в : %s</br>' %self.timeFinishOfExtra.strftime('%H:%M:%S'),
 						'<br>Переработано: %s ч</br>' %self.extractTimeFormat(self.timeDelta), #extra dot
 						'<br>Полных часов: %s ч</br>' %str(math.floor(self.timeDelta.seconds / 3600)),
-						'%s' %(''.join(activity))]
+						'%s' %(''.join(activity)),'<br><b>%s<b></br>'%self.workForFree]
 			if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
 		message = ''.join(message)
 		outlook = win32.Dispatch('outlook.application')
@@ -238,7 +242,7 @@ class Ui_Dialog(object):
 		#sys.exit(app.exec_())
 		#else: sys.exit(app.exec_())
 
-if __name__ == "__main__":
+def main():
 	import sys
 	app = QtWidgets.QApplication(sys.argv)
 	Dialog = QtWidgets.QDialog()
@@ -247,3 +251,5 @@ if __name__ == "__main__":
 	Dialog.show()
 	sys.exit(app.exec_())
 
+if __name__ == "__main__":
+	main()	
