@@ -1,31 +1,24 @@
 # -*- coding: utf-8 -*-
-'''
-new features
-добавить аттачменты
-править шероховатости в шаблоне сообщений
-'''
 from PyQt5 import QtCore, QtGui, QtWidgets
-import re
 import datetime as dt
 import win32com.client as win32  
-import pythoncom
-import random 
 import urllib.request
-import multiprocessing
-import threading
 import ssl
 import math
 
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
+		self.version = "v2.5.5"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
 		self.isWeekend = self.checkIsWeekend()
-		self.isLate = dt.datetime.now() > dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
-		self.isBeforeStart = dt.datetime.now() < dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
+		self.timeStartOfday = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
+		self.timeEndOfDay = dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT)
+		self.isLate = self.timeStartOfday < dt.datetime.now() < self.timeEndOfDay #пока не сработает для пятницы, но читаемость уже лучше
+		self.isBeforeStart = dt.datetime.now() < self.timeStartOfday
 		self.timeStartOfExtra = None
 		self.timeFinishOfExtra = None
 		self.timeDelta = None
@@ -112,7 +105,7 @@ class Ui_Dialog(object):
 
 	def retranslateUi(self, Dialog):
 		_translate = QtCore.QCoreApplication.translate
-		Dialog.setWindowTitle(_translate("Dialog", "WorQt"))
+		Dialog.setWindowTitle(_translate("Dialog", "WorQt %s" %self.version))
 		self.timeEdit.setDisplayFormat(_translate("Dialog", "HH:mm:ss"))
 		self.pushButton.setText(_translate("Dialog", "Отправить"))
 		self.pushButton1.setText(_translate("Dialog", "+"))
@@ -162,15 +155,14 @@ class Ui_Dialog(object):
 	def getTime(self, mode):
 		today = self.today.strftime("%d.%m.%Y")
 		if mode == 2:
-			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
-			if dt.datetime.now() > dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT):
+			if dt.datetime.now() > self.timeEndOfDay:
 				self.informationLabel.setText("Уже слишком поздно")
 				return None
-			else: self.timeDeltaLate = dt.datetime.now() - workDayStart
+			else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfday
 			return True
 		elif mode == 3:
-			workDayStart = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
-			self.timeDeltaBefore = workDayStart - dt.datetime.now()
+			
+			self.timeDeltaBefore = self.timeStartOfday - dt.datetime.now()
 			# if self.timeDeltaBefore < dt.timedelta(seconds = 0):
 				# self.informationLabel.setText("Уже слишком поздно")			
 				# return None
@@ -178,7 +170,7 @@ class Ui_Dialog(object):
 		else:
 			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
 			elif self.weekday in [4]: self.timeStartOfExtra = dt.datetime.strptime("%s 16:30:00" %self.today.date(), self.FMT)
-			else:  self.timeStartOfExtra = dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT)
+			else:  self.timeStartOfExtra = self.timeEndOfDay
 			self.timeFinishOfExtra = dt.datetime.now()
 			self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
 			if self.timeDelta < dt.timedelta(seconds = 1):
