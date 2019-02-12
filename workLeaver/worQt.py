@@ -5,7 +5,6 @@ import win32com.client as win32
 import urllib.request
 import ssl
 import math
-import codecs
 
 class DragAndDropList(QtWidgets.QListWidget):
 
@@ -28,15 +27,15 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
-		self.version = "v2.6"
+		self.version = "v2.6.1"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
 		self.isWeekend = self.checkIsWeekend()
-		self.timeStartOfday = dt.datetime.strptime("%s 08:30:00" %self.today.date(), self.FMT)
-		self.timeEndOfDay = dt.datetime.strptime("%s 17:45:00" %self.today.date(), self.FMT)
-		self.isLate = self.timeStartOfday < dt.datetime.now() < self.timeEndOfDay #пока не сработает для пятницы, но читаемость уже лучше
+		self.timeStartOfday = self.convertTime("08:30:00")
+		self.timeEndOfDay = self.convertTime("17:45:00")
+		self.isLate = self.timeStartOfday < dt.datetime.now() < self.timeEndOfDay
 		self.isBeforeStart = dt.datetime.now() < self.timeStartOfday
 		self.timeStartOfExtra = None
 		self.timeFinishOfExtra = None
@@ -47,7 +46,7 @@ class Ui_Dialog(object):
 		############################################
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
-		Dialog.setFixedSize(370, 370)
+		Dialog.setFixedSize(365, 370)
 		self.gridLayoutWidget = QtWidgets.QWidget(Dialog)
 		self.gridLayoutWidget.setGeometry(QtCore.QRect(7, 3, 350, 360))
 		self.gridLayoutWidget.setObjectName("gridLayoutWidget")
@@ -120,6 +119,17 @@ class Ui_Dialog(object):
 		self.pushButton3.clicked.connect(self.clearAttachment)
 		self.gridLayout.addWidget(self.pushButton3,8,2,1,1)
 		
+#hint section
+		# self.textEdit.setToolTip('Поле для ввода отчета о переработке')
+		# self.timeEdit.setToolTip('Время начала рабочего дня в выходной или праздник')
+		# self.pushButton.setToolTip('Отправит письмо ответственному за ведение табеля')
+		# self.checkBox_2.setToolTip('Отметит тебя, если опоздал на работу')
+		# self.checkBox_3.setToolTip('Отметит тебя, если пришел поработать засветло')
+		# self.listWidget.setToolTip('Перетащи в меня важные документы и другие вложения.')
+		# self.pushButton1.setToolTip('Добавит новое вложение в перечень')
+		# self.pushButton2.setToolTip('Удалит выбранное вложение')
+		# self.pushButton3.setToolTip('Очистит весь список вложений')
+
 		self.retranslateUi(Dialog)
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
@@ -135,9 +145,15 @@ class Ui_Dialog(object):
 		self.checkBox_3.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
 
+	def convertTime(self, stringTime):
+		out = dt.datetime.strptime("%s %s" %(self.today.date(),stringTime), self.FMT)
+		return out
+
 	def addAttachment(self, parent):
-		attachment = QtWidgets.QFileDialog.getOpenFileName()[0]
-		self.listWidget.addItem(attachment)
+		attachments = QtWidgets.QFileDialog.getOpenFileUrls()[0]
+		for url in attachments:
+			attachment = url.url().strip('file:///')
+			self.listWidget.addItem(attachment)
 		pass
 
 	def removeAttachment(self, parent):
@@ -185,7 +201,7 @@ class Ui_Dialog(object):
 			return True
 		else:
 			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
-			elif self.weekday in [4]: self.timeStartOfExtra = dt.datetime.strptime("%s 16:30:00" %self.today.date(), self.FMT)
+			elif self.weekday in [4]: self.timeStartOfExtra = self.convertTime("16:30:00")
 			else:  self.timeStartOfExtra = self.timeEndOfDay
 			self.timeFinishOfExtra = dt.datetime.now()
 			self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
@@ -206,6 +222,8 @@ class Ui_Dialog(object):
 		d['days'] = tdelta.days
 		d['hrs'], rem = divmod(tdelta.seconds, 3600)
 		d['min'], d['sec'] = divmod(rem, 60)
+		for key,val in d.items():
+			if d[key] < 10 : d[key] = "0%s"%(val)
 		return ('%s:%s:%s' %(d['hrs'],d['min'],d['sec']))
 
 	def sendMessage(self, parent):
