@@ -4,6 +4,7 @@ import datetime as dt
 import win32com.client as win32  
 import urllib.request
 import ssl
+import os
 import math
 
 class DragAndDropList(QtWidgets.QListWidget):
@@ -27,7 +28,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
-		self.version = "v2.6.2"
+		self.version = "v2.7"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -43,6 +44,7 @@ class Ui_Dialog(object):
 		self.timeDeltaLate = None
 		self.timeDeltaBefore = None
 		self.workForFree = ""
+		self.logFile = self.getLogFile()
 		############################################
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
@@ -130,11 +132,13 @@ class Ui_Dialog(object):
 		return out
 
 	def addAttachment(self, parent):
-		attachments = QtWidgets.QFileDialog.getOpenFileUrls()[0]
-		for url in attachments:
-			attachment = url.url().strip('file:///')
-			self.listWidget.addItem(attachment)
-		pass
+		try:
+			attachments = QtWidgets.QFileDialog.getOpenFileUrls()[0]
+			for url in attachments:
+				attachment = url.url().strip('file:///')
+				self.listWidget.addItem(attachment)
+		except Exception as ex:
+			self.writeLog('addAttachment failed with %s' %ex)
 
 	def removeAttachment(self, parent):
 		try: #https://stackoverflow.com/questions/23835847/how-to-remove-item-from-qlistwidget/23836142
@@ -142,11 +146,13 @@ class Ui_Dialog(object):
 			if not listItems: return
 			for item in listItems:
 				self.listWidget.takeItem(self.listWidget.row(item))
-		except: pass
+		except Exception as ex:
+			self.writeLog('removeAttachment failed with %s' %ex)
 	
 	def clearAttachment(self, parent):
 		try: self.listWidget.clear()
-		except: pass
+		except Exception as ex:
+			self.writeLog('clearAttachment failed with %s' %ex)
 
 	def sorryImLate(self):
 		flag = self.checkBox_2.checkState()
@@ -157,8 +163,8 @@ class Ui_Dialog(object):
 		self.checkBox_2.setEnabled(not flag)
 
 	def checkIsWeekend(self):
-		today = self.today.strftime("%Y%m%d")
 		try:
+			today = self.today.strftime("%Y%m%d")
 			scontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 			chemeo_search_url = 'https://isdayoff.ru/%s' %today
 			response = urllib.request.urlopen(chemeo_search_url, context = scontext, timeout = 5)
@@ -169,70 +175,76 @@ class Ui_Dialog(object):
 		return outVal 
 
 	def getTime(self, mode):
-		if mode == 2:
-			if dt.datetime.now() > self.timeEndOfDay:
-				self.informationLabel.setText("Уже слишком поздно")
-				return None
-			else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfDay
-			return True
-		elif mode == 3:
-			self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
-			return True
-		else:
-			today = self.today.strftime("%d.%m.%Y")
-			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
-			elif self.weekday in [4]: self.timeStartOfExtra = self.convertTime("16:30:00")
-			else:  self.timeStartOfExtra = self.timeEndOfDay
-			self.timeFinishOfExtra = dt.datetime.now()
-			self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
-			if self.timeDelta < dt.timedelta(seconds = 1):
-				self.informationLabel.setText("Рабочий день еще продолжается")
-				return None
-			if self.timeDelta > dt.timedelta(seconds = 1): 
-				if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
-					self.workForFree = "Отработка меньше 4 часов в выходной"			
-					return True
-				if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
-					self.workForFree = "Отработка меньше 1 часа в в будний день"	
-					return True
+		try:
+			if mode == 2:
+				if dt.datetime.now() > self.timeEndOfDay:
+					self.informationLabel.setText("Уже слишком поздно")
+					return None
+				else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfDay
 				return True
+			elif mode == 3:
+				self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
+				return True
+			else:
+				today = self.today.strftime("%d.%m.%Y")
+				if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
+				elif self.weekday in [4]: self.timeStartOfExtra = self.convertTime("16:30:00")
+				else:  self.timeStartOfExtra = self.timeEndOfDay
+				self.timeFinishOfExtra = dt.datetime.now()
+				self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
+				if self.timeDelta < dt.timedelta(seconds = 1):
+					self.informationLabel.setText("Рабочий день еще продолжается")
+					return None
+				if self.timeDelta > dt.timedelta(seconds = 1): 
+					if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
+						self.workForFree = "Отработка меньше 4 часов в выходной"			
+						return True
+					if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
+						self.workForFree = "Отработка меньше 1 часа в в будний день"	
+						return True
+					return True
+		except Exception as ex:
+			self.writeLog('getTime failed with %s' %ex)
 				
 	def extractTimeFormat(self,tdelta):
-		d = {}
-		d['days'] = tdelta.days
-		d['hrs'], rem = divmod(tdelta.seconds, 3600)
-		d['min'], d['sec'] = divmod(rem, 60)
-		for key,val in d.items():
-			if d[key] < 10 : d[key] = "0%s"%(val)
-		return ('%s:%s:%s' %(d['hrs'],d['min'],d['sec']))
+		try:
+			d = {}
+			d['days'] = tdelta.days
+			d['hrs'], rem = divmod(tdelta.seconds, 3600)
+			d['min'], d['sec'] = divmod(rem, 60)
+			for key,val in d.items():
+				if d[key] < 10 : d[key] = "0%s"%(val)
+			return ('%s:%s:%s' %(d['hrs'],d['min'],d['sec']))
+		except Exception as ex:
+			self.writeLog('extractTimeFormat failed with %s' %ex)
 
 	def sendMessage(self, parent):
-		today = self.today.strftime("%d.%m.%Y")
-		if self.checkBox_2.checkState():
-			if self.getTime(2) is None: return None
-			subject = 'Выход на работу - %s' %today
-			message = ['<br>%s</br>' %today,
-						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
-						'<br>Пришел позже на : %s</br>' %self.extractTimeFormat(self.timeDeltaLate)]	
-		elif self.checkBox_3.checkState():
-			if self.getTime(3) is None: return None
-			subject = 'Переработка - %s' %today
-			message = ['<br>%s</br>' %today,
-						'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
-						'<br>Пришел раньше на : %s</br>' %self.extractTimeFormat(self.timeDeltaBefore)]	
-		else:
-			if self.getTime(1) is None: return None
-			subject = 'Переработка - %s' %today
-			text = (self.textEdit.toPlainText()).split('\n')
-			activity = ['<br>%s</br>' %row for row in text]
-			message = ['<br>%s</br>' %today,
-						'<br>Ушел в : %s</br>' %self.timeFinishOfExtra.strftime('%H:%M:%S'),
-						'<br>Переработано: %s</br>' %self.extractTimeFormat(self.timeDelta),
-						'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDelta.seconds / 3600)),
-						'%s' %(''.join(activity)),'<br><b>%s<b></br>'%self.workForFree]
-			if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
-		message = ''.join(message)
 		try:
+			today = self.today.strftime("%d.%m.%Y")
+			if self.checkBox_2.checkState():
+				if self.getTime(2) is None: return None
+				subject = 'Выход на работу - %s' %today
+				message = ['<br>%s</br>' %today,
+							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
+							'<br>Пришел позже на : %s</br>' %self.extractTimeFormat(self.timeDeltaLate)]	
+			elif self.checkBox_3.checkState():
+				if self.getTime(3) is None: return None
+				subject = 'Переработка - %s' %today
+				message = ['<br>%s</br>' %today,
+							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
+							'<br>Пришел раньше на : %s</br>' %self.extractTimeFormat(self.timeDeltaBefore)]	
+			else:
+				if self.getTime(1) is None: return None
+				subject = 'Переработка - %s' %today
+				text = (self.textEdit.toPlainText()).split('\n')
+				activity = ['<br>%s</br>' %row for row in text]
+				message = ['<br>%s</br>' %today,
+							'<br>Ушел в : %s</br>' %self.timeFinishOfExtra.strftime('%H:%M:%S'),
+							'<br>Переработано: %s</br>' %self.extractTimeFormat(self.timeDelta),
+							'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDelta.seconds / 3600)),
+							'%s' %(''.join(activity)),'<br><b>%s<b></br>'%self.workForFree]
+				if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
+			message = ''.join(message)
 			outlook = win32.Dispatch('outlook.application')
 			mail = outlook.CreateItem(0)
 			mail.To = ''
@@ -248,7 +260,33 @@ class Ui_Dialog(object):
 			#mail.send #uncomment if you want to send instead of displaying
 			#sys.exit(app.exec_())
 			#else: sys.exit(app.exec_())
-		except: pass
+		except Exception as ex:
+			self.writeLog('sendMessage failed with %s' %ex)
+
+	def getLogFile(self):
+		try:
+			dirName = '%s\\worqt_cache' %os.environ['APPDATA']
+			fileName = '%s\\worqt_cache\\log.txt' %os.environ['APPDATA']
+			if os.path.isdir(dirName): pass
+			else: os.mkdir(dirName)
+			if os.path.isfile(fileName): return fileName 
+			else: 
+				with open(fileName,'a') as cache: 
+					cache.close()
+				return fileName
+		except Exception as ex:
+			self.writeLog('getLog failed with %s' %ex)
+		
+	def writeLog(self,logString):
+		try:
+			with open(self.logFile,'a') as log: 
+					log.write('%s -- %s\n'%(dt.datetime.now(),logString))
+			#import pyscreenshoot - slezhka
+		except Exception as ex:
+			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, 'writeCacheFile failed with %s' %ex)
+			raise ex
+
+	
 
 def main():
 	import sys
