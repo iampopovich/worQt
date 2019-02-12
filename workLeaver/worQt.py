@@ -9,7 +9,7 @@ import math
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
-		self.version = "v2.5.5"
+		self.version = "v2.5.6"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -161,7 +161,6 @@ class Ui_Dialog(object):
 			else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfday
 			return True
 		elif mode == 3:
-			
 			self.timeDeltaBefore = self.timeStartOfday - dt.datetime.now()
 			# if self.timeDeltaBefore < dt.timedelta(seconds = 0):
 				# self.informationLabel.setText("Уже слишком поздно")			
@@ -183,6 +182,7 @@ class Ui_Dialog(object):
 				if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
 					self.workForFree = "Отработка меньше 1 часа в в будний день"	
 					return True
+				return True
 				
 	def extractTimeFormat(self,tdelta):
 		d = {}
@@ -213,7 +213,7 @@ class Ui_Dialog(object):
 			message = ['<br>%s</br>' %today,
 						'<br>Ушел в : %s</br>' %self.timeFinishOfExtra.strftime('%H:%M:%S'),
 						'<br>Переработано: %s ч</br>' %self.extractTimeFormat(self.timeDelta), #extra dot
-						'<br>Полных часов: %s ч</br>' %str(math.floor(self.timeDelta.seconds / 3600)),
+						'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDelta.seconds / 3600)),
 						'%s' %(''.join(activity)),'<br><b>%s<b></br>'%self.workForFree]
 			if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
 		message = ''.join(message)
