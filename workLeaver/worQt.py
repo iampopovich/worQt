@@ -27,16 +27,16 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
-		self.version = "v2.6.1"
+		self.version = "v2.6.2"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
 		self.isWeekend = self.checkIsWeekend()
-		self.timeStartOfday = self.convertTime("08:30:00")
+		self.timeStartOfDay = self.convertTime("08:30:00")
 		self.timeEndOfDay = self.convertTime("17:45:00")
-		self.isLate = self.timeStartOfday < dt.datetime.now() < self.timeEndOfDay
-		self.isBeforeStart = dt.datetime.now() < self.timeStartOfday
+		self.isLate = self.timeStartOfDay < dt.datetime.now() < self.timeEndOfDay
+		self.isBeforeStart = dt.datetime.now() < self.timeStartOfDay
 		self.timeStartOfExtra = None
 		self.timeFinishOfExtra = None
 		self.timeDelta = None
@@ -53,11 +53,9 @@ class Ui_Dialog(object):
 		self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
 		self.gridLayout.setContentsMargins(0, 0, 0, 0)
 		self.gridLayout.setObjectName("gridLayout")
-		
 		self.label = QtWidgets.QLabel(self.gridLayoutWidget)
 		self.label.setObjectName("label")
 		self.gridLayout.addWidget(self.label, 3, 0, 1, 1)
-
 		self.timeEdit = QtWidgets.QTimeEdit(self.gridLayoutWidget)
 		self.timeEdit.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.timeEdit.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
@@ -86,50 +84,32 @@ class Ui_Dialog(object):
 		self.checkBox_3.setObjectName("checkBox_3")
 		self.checkBox_3.setEnabled(not self.isWeekend if self.isWeekend else self.isBeforeStart)
 		self.checkBox_3.stateChanged.connect(self.earlyBirdy)
-		
 		self.gridLayout.addWidget(self.checkBox_3, 4, 1, 1, 1)
 		self.informationLabel = QtWidgets.QLabel(self.gridLayoutWidget)
 		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
 		self.informationLabel.setObjectName("informationLabel")
 		self.gridLayout.addWidget(self.informationLabel, 1, 0, 1, 3)
-
-		# self.listWidget = QtWidgets.QListWidget(self.gridLayoutWidget)
 		self.listWidget = DragAndDropList(self.gridLayoutWidget)
 		self.listWidget.setObjectName("listWidget")
 		self.gridLayout.addWidget(self.listWidget,6,0,3,2)
-
 		self.pushButton1 = QtWidgets.QPushButton(self.gridLayoutWidget)
 		self.pushButton1.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton1.setObjectName("pushButton1")
 		self.pushButton1.setText("+")
 		self.pushButton1.clicked.connect(self.addAttachment)
 		self.gridLayout.addWidget(self.pushButton1,6,2,1,1)
-
 		self.pushButton2 = QtWidgets.QPushButton(self.gridLayoutWidget)
 		self.pushButton2.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton2.setObjectName("pushButton2")
 		self.pushButton2.setText("-")
 		self.pushButton2.clicked.connect(self.removeAttachment)
 		self.gridLayout.addWidget(self.pushButton2,7,2,1,1)
-
 		self.pushButton3 = QtWidgets.QPushButton(self.gridLayoutWidget)
 		self.pushButton3.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton3.setObjectName("pushButton3")
 		self.pushButton3.setText("Очистить")
 		self.pushButton3.clicked.connect(self.clearAttachment)
 		self.gridLayout.addWidget(self.pushButton3,8,2,1,1)
-		
-#hint section
-		# self.textEdit.setToolTip('Поле для ввода отчета о переработке')
-		# self.timeEdit.setToolTip('Время начала рабочего дня в выходной или праздник')
-		# self.pushButton.setToolTip('Отправит письмо ответственному за ведение табеля')
-		# self.checkBox_2.setToolTip('Отметит тебя, если опоздал на работу')
-		# self.checkBox_3.setToolTip('Отметит тебя, если пришел поработать засветло')
-		# self.listWidget.setToolTip('Перетащи в меня важные документы и другие вложения.')
-		# self.pushButton1.setToolTip('Добавит новое вложение в перечень')
-		# self.pushButton2.setToolTip('Удалит выбранное вложение')
-		# self.pushButton3.setToolTip('Очистит весь список вложений')
-
 		self.retranslateUi(Dialog)
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
@@ -189,17 +169,17 @@ class Ui_Dialog(object):
 		return outVal 
 
 	def getTime(self, mode):
-		today = self.today.strftime("%d.%m.%Y")
 		if mode == 2:
 			if dt.datetime.now() > self.timeEndOfDay:
 				self.informationLabel.setText("Уже слишком поздно")
 				return None
-			else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfday
+			else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfDay
 			return True
 		elif mode == 3:
-			self.timeDeltaBefore = self.timeStartOfday - dt.datetime.now()
+			self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
 			return True
 		else:
+			today = self.today.strftime("%d.%m.%Y")
 			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
 			elif self.weekday in [4]: self.timeStartOfExtra = self.convertTime("16:30:00")
 			else:  self.timeStartOfExtra = self.timeEndOfDay
@@ -247,27 +227,28 @@ class Ui_Dialog(object):
 			activity = ['<br>%s</br>' %row for row in text]
 			message = ['<br>%s</br>' %today,
 						'<br>Ушел в : %s</br>' %self.timeFinishOfExtra.strftime('%H:%M:%S'),
-						'<br>Переработано: %s ч</br>' %self.extractTimeFormat(self.timeDelta), #extra dot
+						'<br>Переработано: %s</br>' %self.extractTimeFormat(self.timeDelta),
 						'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDelta.seconds / 3600)),
 						'%s' %(''.join(activity)),'<br><b>%s<b></br>'%self.workForFree]
 			if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
 		message = ''.join(message)
-		outlook = win32.Dispatch('outlook.application')
-		mail = outlook.CreateItem(0)
-		mail.To = ''
-		mail.CC = ''
-		for i in range(self.listWidget.count()):
-			attachment = self.listWidget.item(i).text()
-			mail.Attachments.Add(attachment)
-		mail.Subject = subject
-		mail.GetInspector 
-		#mail.Body = message
-		index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
-		mail.HTMLbody = mail.HTMLbody[:index + 1] + message + mail.HTMLbody[index + 1:] 
-		mail.Display(True)
-		#mail.send #uncomment if you want to send instead of displaying
-		#sys.exit(app.exec_())
-		#else: sys.exit(app.exec_())
+		try:
+			outlook = win32.Dispatch('outlook.application')
+			mail = outlook.CreateItem(0)
+			mail.To = ''
+			mail.CC = ''
+			for i in range(self.listWidget.count()):
+				attachment = self.listWidget.item(i).text()
+				mail.Attachments.Add(attachment)
+			mail.Subject = subject
+			mail.GetInspector 
+			index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
+			mail.HTMLbody = mail.HTMLbody[:index + 1] + message + mail.HTMLbody[index + 1:] 
+			mail.Display(True)
+			#mail.send #uncomment if you want to send instead of displaying
+			#sys.exit(app.exec_())
+			#else: sys.exit(app.exec_())
+		except: pass
 
 def main():
 	import sys
