@@ -5,11 +5,30 @@ import win32com.client as win32
 import urllib.request
 import ssl
 import math
+import codecs
+
+class DragAndDropList(QtWidgets.QListWidget):
+
+	def __init__(self, parent=None, **args):
+		super(DragAndDropList, self).__init__(parent, **args)
+		self.setAcceptDrops(True)
+		self.setDragEnabled(True)
+		self.setDragDropMode(QtWidgets.QListWidget.InternalMove)
+
+	def dragEnterEvent(self, e):
+		if e.mimeData().hasUrls():
+			e.accept()
+		else: e.ignore()
+
+	def dropEvent(self, e):
+		for url in e.mimeData().urls():
+			attachment = url.url().strip('file:///')
+			self.addItem(attachment)
 
 class Ui_Dialog(object):
 	def setupUi(self, Dialog):
 		# glob variables 
-		self.version = "v2.5.6"
+		self.version = "v2.6"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -75,7 +94,8 @@ class Ui_Dialog(object):
 		self.informationLabel.setObjectName("informationLabel")
 		self.gridLayout.addWidget(self.informationLabel, 1, 0, 1, 3)
 
-		self.listWidget = QtWidgets.QListWidget(self.gridLayoutWidget)
+		# self.listWidget = QtWidgets.QListWidget(self.gridLayoutWidget)
+		self.listWidget = DragAndDropList(self.gridLayoutWidget)
 		self.listWidget.setObjectName("listWidget")
 		self.gridLayout.addWidget(self.listWidget,6,0,3,2)
 
@@ -162,9 +182,6 @@ class Ui_Dialog(object):
 			return True
 		elif mode == 3:
 			self.timeDeltaBefore = self.timeStartOfday - dt.datetime.now()
-			# if self.timeDeltaBefore < dt.timedelta(seconds = 0):
-				# self.informationLabel.setText("Уже слишком поздно")			
-				# return None
 			return True
 		else:
 			if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
