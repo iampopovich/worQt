@@ -6,9 +6,12 @@ import urllib.request
 import ssl
 import os
 import math
+import json
+import sys
+import time
+from threading import Thread,Timer
 
 class DragAndDropList(QtWidgets.QListWidget):
-
 	def __init__(self, parent=None, **args):
 		super(DragAndDropList, self).__init__(parent, **args)
 		self.setAcceptDrops(True)
@@ -25,10 +28,10 @@ class DragAndDropList(QtWidgets.QListWidget):
 			attachment = url.url().strip('file:///')
 			self.addItem(attachment)
 
-class Ui_Dialog(object):
-	def setupUi(self, Dialog):
-		# glob variables 
-		self.version = "v2.7"
+class Ui_Dialog(QtWidgets.QDialog):
+	def __init__(self,parent = None, **args):
+		super(Ui_Dialog,self).__init__(parent,**args)
+		self.version = "v2.8.0"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -45,7 +48,12 @@ class Ui_Dialog(object):
 		self.timeDeltaBefore = None
 		self.workForFree = ""
 		self.logFile = self.getLogFile()
-		############################################
+		self._shutdown_timer = QtCore.QTimer(self)
+		self._shutdown_timer.setSingleShot(True)
+		self._shutdown_timer.timeout.connect(self.closeUp)
+		self._shutdown_timer.start(2700000) #shutdown after 45 minutes
+
+	def setupUi(self, Dialog):
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
 		Dialog.setFixedSize(365, 370)
@@ -79,13 +87,13 @@ class Ui_Dialog(object):
 		self.gridLayout.addWidget(self.textEdit, 0, 0, 1, 3)
 		self.checkBox_2 = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox_2.setObjectName("checkBox_2")
-		self.checkBox_2.stateChanged.connect(self.sorryImLate)
+		#self.checkBox_2.stateChanged.connect(self.sorryImLate)
 		self.checkBox_2.setEnabled(not self.isWeekend if self.isWeekend else self.isLate)
 		self.gridLayout.addWidget(self.checkBox_2, 4, 0, 1, 1)
 		self.checkBox_3 = QtWidgets.QCheckBox(self.gridLayoutWidget)
 		self.checkBox_3.setObjectName("checkBox_3")
 		self.checkBox_3.setEnabled(not self.isWeekend if self.isWeekend else self.isBeforeStart)
-		self.checkBox_3.stateChanged.connect(self.earlyBirdy)
+		#self.checkBox_3.stateChanged.connect(self.earlyBirdy)
 		self.gridLayout.addWidget(self.checkBox_3, 4, 1, 1, 1)
 		self.informationLabel = QtWidgets.QLabel(self.gridLayoutWidget)
 		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
@@ -131,6 +139,28 @@ class Ui_Dialog(object):
 		out = dt.datetime.strptime("%s %s" %(self.today.date(),stringTime), self.FMT)
 		return out
 
+	# def genVersionConfig(self):
+	# 	file = '\\ver.conf'
+	# 	with open(file,'bw') as config:
+	# 		values = {"version":self.version}
+	# 		json.dump(values,config)
+
+	# def checkForUpdate(self):
+		# try:
+			# fileName = '\\ver.conf'
+			# with open(fileName,'br') as config:
+				# configVersion = json.load(config)
+			# version = configVersion['Version']
+			# verCurrent = self.version.split('.')
+			# verToCheck = version.split('.')
+			# for index in range(len(verCurrent)):
+				# if verCurrent[index] < verToCheck[index]:
+					# QtWidgets.QMessageBox.about(self,'Обновление','Доступна новая версия %s'%version)
+					# break
+				# else: continue
+		# except Exception as ex:
+			# self.writeLog('addAttachment failed with %s' %ex)
+
 	def addAttachment(self, parent):
 		try:
 			attachments = QtWidgets.QFileDialog.getOpenFileUrls()[0]
@@ -141,11 +171,12 @@ class Ui_Dialog(object):
 			self.writeLog('addAttachment failed with %s' %ex)
 
 	def removeAttachment(self, parent):
-		try: #https://stackoverflow.com/questions/23835847/how-to-remove-item-from-qlistwidget/23836142
+		try:
 			listItems = self.listWidget.selectedItems()
 			if not listItems: return
 			for item in listItems:
-				self.listWidget.takeItem(self.listWidget.row(item))
+				index = self.listWidget.row(item)
+				self.listWidget.takeItem(index)
 		except Exception as ex:
 			self.writeLog('removeAttachment failed with %s' %ex)
 	
@@ -154,13 +185,13 @@ class Ui_Dialog(object):
 		except Exception as ex:
 			self.writeLog('clearAttachment failed with %s' %ex)
 
-	def sorryImLate(self):
-		flag = self.checkBox_2.checkState()
-		self.checkBox_3.setEnabled(not flag)
+	# def sorryImLate(self):
+	# 	flag = self.checkBox_2.checkState()
+	# 	self.checkBox_3.setEnabled(not flag)
 
-	def earlyBirdy(self,parent):
-		flag = self.checkBox_3.checkState()
-		self.checkBox_2.setEnabled(not flag)
+	# def earlyBirdy(self,parent):
+	# 	flag = self.checkBox_3.checkState()
+	# 	self.checkBox_2.setEnabled(not flag)
 
 	def checkIsWeekend(self):
 		try:
@@ -184,6 +215,9 @@ class Ui_Dialog(object):
 				return True
 			elif mode == 3:
 				self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
+				if not(self.isWeekend) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
+						self.workForFree = "Отработка меньше 1 часа в будний день"	
+						return True
 				return True
 			else:
 				today = self.today.strftime("%d.%m.%Y")
@@ -200,7 +234,7 @@ class Ui_Dialog(object):
 						self.workForFree = "Отработка меньше 4 часов в выходной"			
 						return True
 					if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
-						self.workForFree = "Отработка меньше 1 часа в в будний день"	
+						self.workForFree = "Отработка меньше 1 часа в будний день"	
 						return True
 					return True
 		except Exception as ex:
@@ -226,13 +260,16 @@ class Ui_Dialog(object):
 				subject = 'Выход на работу - %s' %today
 				message = ['<br>%s</br>' %today,
 							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
-							'<br>Пришел позже на : %s</br>' %self.extractTimeFormat(self.timeDeltaLate)]	
+							'<br>Пришел позже на : %s</br>' %self.extractTimeFormat(self.timeDeltaLate),
+							'<br>Часов в отработку: %s ч</br>' %(math.ceil(self.timeDeltaLate.seconds / 3600))]	
 			elif self.checkBox_3.checkState():
 				if self.getTime(3) is None: return None
 				subject = 'Переработка - %s' %today
 				message = ['<br>%s</br>' %today,
 							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
-							'<br>Пришел раньше на : %s</br>' %self.extractTimeFormat(self.timeDeltaBefore)]	
+							'<br>Пришел раньше на : %s</br>' %self.extractTimeFormat(self.timeDeltaBefore),
+							'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDeltaBefore.seconds / 3600)),
+							'<br><b>%s<b></br>'%self.workForFree]	
 			else:
 				if self.getTime(1) is None: return None
 				subject = 'Переработка - %s' %today
@@ -258,10 +295,13 @@ class Ui_Dialog(object):
 			mail.HTMLbody = mail.HTMLbody[:index + 1] + message + mail.HTMLbody[index + 1:] 
 			mail.Display(True)
 			#mail.send #uncomment if you want to send instead of displaying
-			#sys.exit(app.exec_())
 			#else: sys.exit(app.exec_())
 		except Exception as ex:
+			print('sendMessage failed with %s' %ex)
 			self.writeLog('sendMessage failed with %s' %ex)
+	
+	def closeUp(self):
+		sys.exit()
 
 	def getLogFile(self):
 		try:
@@ -286,16 +326,14 @@ class Ui_Dialog(object):
 			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, 'writeCacheFile failed with %s' %ex)
 			raise ex
 
-	
-
-def main():
+def main(args):
 	import sys
 	app = QtWidgets.QApplication(sys.argv)
 	Dialog = QtWidgets.QDialog()
 	ui = Ui_Dialog()
 	ui.setupUi(Dialog)
 	Dialog.show()
-	sys.exit(app.exec_())
+	app.exec_()
 
 if __name__ == "__main__":
-	main()	
+	main(sys.argv)	
