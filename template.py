@@ -1,25 +1,23 @@
 import threading 
 import time as tt
+
  
 glob_index = 0
 
-def iterate():
+def iterate(queries):
 	global glob_index
 	try:
-		for i in range(7):
+		for i,query in enumerate(queries):
 			tt.sleep(1)
 			glob_index+=i
-			print(glob_index)
-		#glob_index/=0
 	except Exception as ex : return ex
 
 def main():	
 	global glob_index
 	while True:
 		try:
-			print('glob_index is equal now ...%s' %glob_index)
-			if glob_index == 30: break
-			t1 = threading.Thread(target = iterate, args = ())
+			if glob_index == len(queries): break
+			t1 = threading.Thread(target = iterate, args = (queries[index:]))
 			t1.start()
 			t1.join()
 		except:
