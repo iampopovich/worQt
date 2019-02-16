@@ -9,6 +9,7 @@ import math
 import json
 import sys
 import time
+#import worQt_time_lib
 from threading import Thread,Timer
 
 class DragAndDropList(QtWidgets.QListWidget):
@@ -31,7 +32,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.9.0"
+		self.version = "v2.9.1"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -47,7 +48,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.timeDeltaLate = None
 		self.timeDeltaBefore = None
 		self.workForFree = ""
-		self.logFile = self.getLogFile()
+		self.logFile = self.getCrashLogFile()
 		self._shutdown_timer = QtCore.QTimer(self)
 		self._shutdown_timer.setSingleShot(True)
 		self._shutdown_timer.timeout.connect(sys.exit)#self.closeUp)
@@ -161,28 +162,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton6.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
 
-	# def genVersionConfig(self):
-	# 	file = '\\ver.conf'
-	# 	with open(file,'bw') as config:
-	# 		values = {"version":self.version}
-	# 		json.dump(values,config)
-
-	# def checkForUpdate(self):
-		# try:
-			# fileName = '\\ver.conf'
-			# with open(fileName,'br') as config:
-				# configVersion = json.load(config)
-			# version = configVersion['Version']
-			# verCurrent = self.version.split('.')
-			# verToCheck = version.split('.')
-			# for index in range(len(verCurrent)):
-				# if verCurrent[index] < verToCheck[index]:
-					# QtWidgets.QMessageBox.about(self,'Обновление','Доступна новая версия %s'%version)
-					# break
-				# else: continue
-		# except Exception as ex:
-			# self.writeLog('addAttachment failed with %s' %ex)
-
 	def addAttachment(self, parent):
 		try:
 			attachments = QtWidgets.QFileDialog.getOpenFileUrls()[0]
@@ -190,7 +169,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 				attachment = url.url().strip('file:///')
 				self.listWidget.addItem(attachment)
 		except Exception as ex:
-			self.writeLog('addAttachment failed with %s' %ex)
+			self.writeCrashLog('addAttachment failed with %s' %ex)
 
 	def removeAttachment(self, parent):
 		try:
@@ -200,12 +179,12 @@ class Ui_Dialog(QtWidgets.QDialog):
 				index = self.listWidget.row(item)
 				self.listWidget.takeItem(index)
 		except Exception as ex:
-			self.writeLog('removeAttachment failed with %s' %ex)
+			self.writeCrashLog('removeAttachment failed with %s' %ex)
 	
 	def clearAttachment(self, parent):
 		try: self.listWidget.clear()
 		except Exception as ex:
-			self.writeLog('clearAttachment failed with %s' %ex)
+			self.writeCrashLog('clearAttachment failed with %s' %ex)
 
 	def checkIsWeekend(self):
 		try:
@@ -252,7 +231,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 						return True
 					return True
 		except Exception as ex:
-			self.writeLog('getTime failed with %s' %ex)
+			self.writeCrashLog('getTime failed with %s' %ex)
 				
 	def extractTimeFormat(self,tdelta):
 		try:
@@ -264,7 +243,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 				if d[key] < 10 : d[key] = "0%s"%(val)
 			return ('%s:%s:%s' %(d['hrs'],d['min'],d['sec']))
 		except Exception as ex:
-			self.writeLog('extractTimeFormat failed with %s' %ex)
+			self.writeCrashLog('extractTimeFormat failed with %s' %ex)
 	
 	def convertTime(self, stringTime):
 		out = dt.datetime.strptime("%s %s" %(self.today.date(),stringTime), self.FMT)
@@ -275,27 +254,31 @@ class Ui_Dialog(QtWidgets.QDialog):
 			today = self.today.strftime("%d.%m.%Y")
 			if self.sender() == self.pushButton5:
 				if self.getTime(2) is None: return None
-				subject = 'Выход на работу - %s' %today
+				subject = ['Выход на работу',today]
 				message = ['<br>%s</br>' %today,
 							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
 							'<br>Пришел позже на : %s</br>' %self.extractTimeFormat(self.timeDeltaLate),
 							'<br>Часов в отработку: %s ч</br>' %(math.ceil(self.timeDeltaLate.seconds / 3600))]	
 			elif self.sender() == self.pushButton6:
 				if self.getTime(3) is None: return None
-				subject = 'Переработка - %s' %today
+				subject = ['Переработка',today]
 				message = ['<br>%s</br>' %today,
 							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
 							'<br>Пришел раньше на : %s</br>' %self.extractTimeFormat(self.timeDeltaBefore),
 							'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDeltaBefore.seconds / 3600)),
 							'<br><b>%s<b></br>'%self.workForFree]
 			elif self.sender() == self.pushButton4:
+				# try: list messages in messagebox for 'Переработка - %s(начало дня)'.
+				# extract start of day into self.timeStartOfExtra
+				# or just take time of message been send (may be less correct than time extracting cause of server overloading and network's ping)
+				# except:
 				self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
-				subject = 'Переработка - %s' %today
+				subject = ['Переработка',today,'(начало дня)'] 
 				message = ['<br>%s</br>' %today,
 					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]				
 			else:
 				if self.getTime(1) is None: return None
-				subject = 'Переработка - %s' %today
+				subject = ['Переработка',today,'(конец дня)'] 
 				text = (self.textEdit.toPlainText()).split('\n')
 				activity = ['<br>%s</br>' %row for row in text]
 				message = ['<br>%s</br>' %today,
@@ -306,13 +289,16 @@ class Ui_Dialog(QtWidgets.QDialog):
 				if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
 			message = ''.join(message)
 			outlook = win32.Dispatch('outlook.application')
+			namespace = outlook.GetNameSpace("MAPI")
+			user = str(namespace.CurrentUser)
 			mail = outlook.CreateItem(0)
 			mail.To = ''
 			mail.CC = ''
 			for i in range(self.listWidget.count()):
 				attachment = self.listWidget.item(i).text()
 				mail.Attachments.Add(attachment)
-			mail.Subject = subject
+			subject.insert(1,user)
+			mail.Subject = ' - '.join(subject)
 			mail.GetInspector 
 			index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
 			mail.HTMLbody = mail.HTMLbody[:index + 1] + message + mail.HTMLbody[index + 1:] 
@@ -321,12 +307,12 @@ class Ui_Dialog(QtWidgets.QDialog):
 			#else: sys.exit(app.exec_())
 		except Exception as ex:
 			print('sendMessage failed with %s' %ex)
-			self.writeLog('sendMessage failed with %s' %ex)
+			self.writeCrashLog('sendMessage failed with %s' %ex)
 
-	def getLogFile(self):
+	def getCrashLogFile(self):
 		try:
 			dirName = '%s\\worqt_cache' %os.environ['APPDATA']
-			fileName = '%s\\worqt_cache\\log.txt' %os.environ['APPDATA']
+			fileName = '%s\\worqt_cache\\crash_log.txt' %os.environ['APPDATA']
 			if os.path.isdir(dirName): pass
 			else: os.mkdir(dirName)
 			if os.path.isfile(fileName): return fileName 
@@ -335,9 +321,9 @@ class Ui_Dialog(QtWidgets.QDialog):
 					cache.close()
 				return fileName
 		except Exception as ex:
-			self.writeLog('getLog failed with %s' %ex)
+			self.writeCrashLog('getLog failed with %s' %ex)
 		
-	def writeLog(self,logString):
+	def writeCrashLog(self,logString):
 		try:
 			with open(self.logFile,'a') as log: 
 					log.write('%s -- %s\n'%(dt.datetime.now(),logString))
