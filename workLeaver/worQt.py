@@ -31,7 +31,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.8.0"
+		self.version = "v2.9.0"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -50,76 +50,101 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.logFile = self.getLogFile()
 		self._shutdown_timer = QtCore.QTimer(self)
 		self._shutdown_timer.setSingleShot(True)
-		self._shutdown_timer.timeout.connect(self.closeUp)
+		self._shutdown_timer.timeout.connect(sys.exit)#self.closeUp)
 		self._shutdown_timer.start(2700000) #shutdown after 45 minutes
 
 	def setupUi(self, Dialog):
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
 		Dialog.setFixedSize(365, 370)
+		font = QtGui.QFont()
+		font.setPointSize(10)
 		self.gridLayoutWidget = QtWidgets.QWidget(Dialog)
 		self.gridLayoutWidget.setGeometry(QtCore.QRect(7, 3, 350, 360))
 		self.gridLayoutWidget.setObjectName("gridLayoutWidget")
+		# 
 		self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
 		self.gridLayout.setContentsMargins(0, 0, 0, 0)
 		self.gridLayout.setObjectName("gridLayout")
+		# 
 		self.label = QtWidgets.QLabel(self.gridLayoutWidget)
 		self.label.setObjectName("label")
 		self.gridLayout.addWidget(self.label, 3, 0, 1, 1)
+		# 
 		self.timeEdit = QtWidgets.QTimeEdit(self.gridLayoutWidget)
 		self.timeEdit.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.timeEdit.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
 		self.timeEdit.setTime(QtCore.QTime(0, 0, 0))
 		self.timeEdit.setObjectName("timeEdit")
 		self.timeEdit.setEnabled(self.isWeekend)
-		self.gridLayout.addWidget(self.timeEdit, 3, 1, 1, 2)
+		self.gridLayout.addWidget(self.timeEdit, 3, 1, 1, 1)
+		# 
+		self.textEdit = QtWidgets.QTextEdit(self.gridLayoutWidget)
+		self.textEdit.setObjectName("textEdit")
+		self.textEdit.setFont(font)
+		self.gridLayout.addWidget(self.textEdit, 0, 0, 1, 3)
+		# 
+		self.informationLabel = QtWidgets.QLabel(self.gridLayoutWidget)
+		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
+		self.informationLabel.setObjectName("informationLabel")
+		self.gridLayout.addWidget(self.informationLabel, 1, 0, 1, 3)
+		# 
+		self.listWidget = DragAndDropList(self.gridLayoutWidget)
+		self.listWidget.setObjectName("listWidget")
+		self.gridLayout.addWidget(self.listWidget,6,0,3,2)
+		# 
 		self.pushButton = QtWidgets.QPushButton(self.gridLayoutWidget)
 		self.pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton.setObjectName("pushButton")
 		self.pushButton.setText("Отправить письмо")
 		self.pushButton.clicked.connect(self.sendMessage)
 		self.gridLayout.addWidget(self.pushButton, 4, 2, 1, 1)
-		self.textEdit = QtWidgets.QTextEdit(self.gridLayoutWidget)
-		self.textEdit.setObjectName("textEdit")
-		font = QtGui.QFont()
-		font.setPointSize(10)
-		self.textEdit.setFont(font)
-		self.gridLayout.addWidget(self.textEdit, 0, 0, 1, 3)
-		self.checkBox_2 = QtWidgets.QCheckBox(self.gridLayoutWidget)
-		self.checkBox_2.setObjectName("checkBox_2")
-		#self.checkBox_2.stateChanged.connect(self.sorryImLate)
-		self.checkBox_2.setEnabled(not self.isWeekend if self.isWeekend else self.isLate)
-		self.gridLayout.addWidget(self.checkBox_2, 4, 0, 1, 1)
-		self.checkBox_3 = QtWidgets.QCheckBox(self.gridLayoutWidget)
-		self.checkBox_3.setObjectName("checkBox_3")
-		self.checkBox_3.setEnabled(not self.isWeekend if self.isWeekend else self.isBeforeStart)
-		#self.checkBox_3.stateChanged.connect(self.earlyBirdy)
-		self.gridLayout.addWidget(self.checkBox_3, 4, 1, 1, 1)
-		self.informationLabel = QtWidgets.QLabel(self.gridLayoutWidget)
-		self.informationLabel.setAlignment(QtCore.Qt.AlignCenter)
-		self.informationLabel.setObjectName("informationLabel")
-		self.gridLayout.addWidget(self.informationLabel, 1, 0, 1, 3)
-		self.listWidget = DragAndDropList(self.gridLayoutWidget)
-		self.listWidget.setObjectName("listWidget")
-		self.gridLayout.addWidget(self.listWidget,6,0,3,2)
+		# 
 		self.pushButton1 = QtWidgets.QPushButton(self.gridLayoutWidget)
 		self.pushButton1.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton1.setObjectName("pushButton1")
 		self.pushButton1.setText("+")
 		self.pushButton1.clicked.connect(self.addAttachment)
 		self.gridLayout.addWidget(self.pushButton1,6,2,1,1)
+		# 
 		self.pushButton2 = QtWidgets.QPushButton(self.gridLayoutWidget)
 		self.pushButton2.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton2.setObjectName("pushButton2")
 		self.pushButton2.setText("-")
 		self.pushButton2.clicked.connect(self.removeAttachment)
 		self.gridLayout.addWidget(self.pushButton2,7,2,1,1)
+		# 
 		self.pushButton3 = QtWidgets.QPushButton(self.gridLayoutWidget)
 		self.pushButton3.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton3.setObjectName("pushButton3")
 		self.pushButton3.setText("Очистить")
 		self.pushButton3.clicked.connect(self.clearAttachment)
 		self.gridLayout.addWidget(self.pushButton3,8,2,1,1)
+		# 
+		self.pushButton4 = QtWidgets.QPushButton(self.gridLayoutWidget)
+		self.pushButton4.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.pushButton4.setObjectName("pushButton4")
+		self.pushButton4.setText("Отметиться")
+		self.pushButton4.setEnabled(self.isWeekend)
+		self.pushButton4.clicked.connect(self.sendMessage)
+		self.gridLayout.addWidget(self.pushButton4, 3, 2, 1, 1)
+		# 
+		self.pushButton5 = QtWidgets.QPushButton(self.gridLayoutWidget)
+		self.pushButton5.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.pushButton5.setObjectName("pushButton5")
+		self.pushButton5.setText("Пришел позже 8:30")
+		self.pushButton5.setEnabled(not self.isWeekend if self.isWeekend else self.isLate)
+		self.pushButton5.clicked.connect(self.sendMessage)
+		self.gridLayout.addWidget(self.pushButton5, 4, 0, 1, 1)
+		# 
+		self.pushButton6 = QtWidgets.QPushButton(self.gridLayoutWidget)
+		self.pushButton6.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.pushButton6.setObjectName("pushButton6")
+		self.pushButton6.setText("Пришел раньше 8:30")
+		self.pushButton6.setEnabled(not self.isWeekend if self.isWeekend else self.isBeforeStart)
+		self.pushButton6.clicked.connect(self.sendMessage)
+		self.gridLayout.addWidget(self.pushButton6, 4, 1, 1, 1)
+		# 
 		self.retranslateUi(Dialog)
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
@@ -131,13 +156,10 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton1.setText(_translate("Dialog", "+"))
 		self.pushButton2.setText(_translate("Dialog", "-"))
 		self.pushButton3.setText(_translate("Dialog", "Очистить"))
-		self.checkBox_2.setText(_translate("Dialog", "Пришел позже 8:30"))
-		self.checkBox_3.setText(_translate("Dialog", "Пришел раньше 8:30"))
+		self.pushButton4.setText(_translate("Dialog", "Отметиться"))
+		self.pushButton5.setText(_translate("Dialog", "Пришел позже 8:30"))
+		self.pushButton6.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
-
-	def convertTime(self, stringTime):
-		out = dt.datetime.strptime("%s %s" %(self.today.date(),stringTime), self.FMT)
-		return out
 
 	# def genVersionConfig(self):
 	# 	file = '\\ver.conf'
@@ -184,14 +206,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		try: self.listWidget.clear()
 		except Exception as ex:
 			self.writeLog('clearAttachment failed with %s' %ex)
-
-	# def sorryImLate(self):
-	# 	flag = self.checkBox_2.checkState()
-	# 	self.checkBox_3.setEnabled(not flag)
-
-	# def earlyBirdy(self,parent):
-	# 	flag = self.checkBox_3.checkState()
-	# 	self.checkBox_2.setEnabled(not flag)
 
 	def checkIsWeekend(self):
 		try:
@@ -251,25 +265,34 @@ class Ui_Dialog(QtWidgets.QDialog):
 			return ('%s:%s:%s' %(d['hrs'],d['min'],d['sec']))
 		except Exception as ex:
 			self.writeLog('extractTimeFormat failed with %s' %ex)
-
+	
+	def convertTime(self, stringTime):
+		out = dt.datetime.strptime("%s %s" %(self.today.date(),stringTime), self.FMT)
+		return out
+	
 	def sendMessage(self, parent):
 		try:
 			today = self.today.strftime("%d.%m.%Y")
-			if self.checkBox_2.checkState():
+			if self.sender() == self.pushButton5:
 				if self.getTime(2) is None: return None
 				subject = 'Выход на работу - %s' %today
 				message = ['<br>%s</br>' %today,
 							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
 							'<br>Пришел позже на : %s</br>' %self.extractTimeFormat(self.timeDeltaLate),
 							'<br>Часов в отработку: %s ч</br>' %(math.ceil(self.timeDeltaLate.seconds / 3600))]	
-			elif self.checkBox_3.checkState():
+			elif self.sender() == self.pushButton6:
 				if self.getTime(3) is None: return None
 				subject = 'Переработка - %s' %today
 				message = ['<br>%s</br>' %today,
 							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
 							'<br>Пришел раньше на : %s</br>' %self.extractTimeFormat(self.timeDeltaBefore),
 							'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDeltaBefore.seconds / 3600)),
-							'<br><b>%s<b></br>'%self.workForFree]	
+							'<br><b>%s<b></br>'%self.workForFree]
+			elif self.sender() == self.pushButton4:
+				self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
+				subject = 'Переработка - %s' %today
+				message = ['<br>%s</br>' %today,
+					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]				
 			else:
 				if self.getTime(1) is None: return None
 				subject = 'Переработка - %s' %today
@@ -299,9 +322,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		except Exception as ex:
 			print('sendMessage failed with %s' %ex)
 			self.writeLog('sendMessage failed with %s' %ex)
-	
-	def closeUp(self):
-		sys.exit()
 
 	def getLogFile(self):
 		try:
