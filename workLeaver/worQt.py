@@ -32,7 +32,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.9.1"
+		self.version = "v2.10.1"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -48,7 +48,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.timeDeltaLate = None
 		self.timeDeltaBefore = None
 		self.workForFree = ""
-		self.logFile = self.getCrashLogFile()
+		self.crashlogFile = self.getCrashLogFile()
+		self.sessionLogFile = self.getSessionLogFile()
 		self._shutdown_timer = QtCore.QTimer(self)
 		self._shutdown_timer.setSingleShot(True)
 		self._shutdown_timer.timeout.connect(sys.exit)#self.closeUp)
@@ -147,6 +148,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.gridLayout.addWidget(self.pushButton6, 4, 1, 1, 1)
 		# 
 		self.retranslateUi(Dialog)
+		self.getSessionStart()
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 	def retranslateUi(self, Dialog):
@@ -162,6 +164,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton6.setText(_translate("Dialog", "Пришел раньше 8:30"))
 		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
 
+#attachment section
 	def addAttachment(self, parent):
 		try:
 			attachments = QtWidgets.QFileDialog.getOpenFileUrls()[0]
@@ -186,6 +189,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		except Exception as ex:
 			self.writeCrashLog('clearAttachment failed with %s' %ex)
 
+#time section
 	def checkIsWeekend(self):
 		try:
 			today = self.today.strftime("%Y%m%d")
@@ -248,7 +252,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def convertTime(self, stringTime):
 		out = dt.datetime.strptime("%s %s" %(self.today.date(),stringTime), self.FMT)
 		return out
-	
+
+#base function section
 	def sendMessage(self, parent):
 		try:
 			today = self.today.strftime("%d.%m.%Y")
@@ -273,12 +278,13 @@ class Ui_Dialog(QtWidgets.QDialog):
 				# or just take time of message been send (may be less correct than time extracting cause of server overloading and network's ping)
 				# except:
 				self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
-				subject = ['Переработка',today,'(начало дня)'] 
+				subject = ['Переработка',today] 
 				message = ['<br>%s</br>' %today,
-					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]				
+					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]
+				self.writeSessionLog(self.timeStartOfExtra)			
 			else:
 				if self.getTime(1) is None: return None
-				subject = ['Переработка',today,'(конец дня)'] 
+				subject = ['Переработка',today] 
 				text = (self.textEdit.toPlainText()).split('\n')
 				activity = ['<br>%s</br>' %row for row in text]
 				message = ['<br>%s</br>' %today,
@@ -303,12 +309,14 @@ class Ui_Dialog(QtWidgets.QDialog):
 			index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
 			mail.HTMLbody = mail.HTMLbody[:index + 1] + message + mail.HTMLbody[index + 1:] 
 			mail.Display(True)
+
 			#mail.send #uncomment if you want to send instead of displaying
 			#else: sys.exit(app.exec_())
 		except Exception as ex:
 			print('sendMessage failed with %s' %ex)
 			self.writeCrashLog('sendMessage failed with %s' %ex)
 
+#caching section
 	def getCrashLogFile(self):
 		try:
 			dirName = '%s\\worqt_cache' %os.environ['APPDATA']
@@ -325,12 +333,44 @@ class Ui_Dialog(QtWidgets.QDialog):
 		
 	def writeCrashLog(self,logString):
 		try:
-			with open(self.logFile,'a') as log: 
-					log.write('%s -- %s\n'%(dt.datetime.now(),logString))
+			with open(self.crashlogFile,'a') as log:
+				log.write('%s -- %s\n'%(dt.datetime.now(),logString))
 			#import pyscreenshoot - slezhka
 		except Exception as ex:
 			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, 'writeCacheFile failed with %s' %ex)
 			raise ex
+
+	def getSessionLogFile(self):
+		try:
+			dirName = '%s\\worqt_cache' %os.environ['APPDATA']
+			fileName = '%s\\worqt_cache\\session_log.txt' %os.environ['APPDATA']
+			if os.path.isdir(dirName): pass
+			else: os.mkdir(dirName)
+			if os.path.isfile(fileName): return fileName 
+			else: 
+				with open(fileName,'a') as cache: 
+					cache.close()
+				return fileName
+		except Exception as ex:
+			self.writeCrashLog('getLog failed with %s' %ex)
+
+	def writeSessionLog(self,logString):
+		try:
+			with open(self.sessionLogFile,'w') as log: 
+				log.write('%s'%(logString))
+		except Exception as ex:
+			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, 'writeCacheFile failed with %s' %ex)
+			raise ex
+	
+	def getSessionStart(self):
+		try:
+			with open(self.sessionLogFile,'r') as log: 
+				line = log.readline()
+			sessionStart = dt.datetime.strptime(line, "%Y-%m-%d %H:%M:%S.%f")
+			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
+		except Exception as ex:
+			self.informationLabel.setText('Не могу определить начало дня. Введите вручную')
+
 
 def main(args):
 	import sys
