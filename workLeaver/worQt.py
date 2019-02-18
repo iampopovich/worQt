@@ -32,12 +32,12 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.10.1"
+		self.version = "v2.10.2"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
-		self.isWeekend = self.checkIsWeekend()
+		self.isWeekend = True#self.checkIsWeekend()
 		self.timeStartOfDay = self.convertTime("08:30:00")
 		self.timeEndOfDay = self.convertTime("17:45:00")
 		self.isLate = self.timeStartOfDay < dt.datetime.now() < self.timeEndOfDay
@@ -148,7 +148,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.gridLayout.addWidget(self.pushButton6, 4, 1, 1, 1)
 		# 
 		self.retranslateUi(Dialog)
-		self.getSessionStart()
+		if self.isWeekend: self.getSessionStart()
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 	def retranslateUi(self, Dialog):
@@ -273,11 +273,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 							'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDeltaBefore.seconds / 3600)),
 							'<br><b>%s<b></br>'%self.workForFree]
 			elif self.sender() == self.pushButton4:
-				# try: list messages in messagebox for 'Переработка - %s(начало дня)'.
-				# extract start of day into self.timeStartOfExtra
-				# or just take time of message been send (may be less correct than time extracting cause of server overloading and network's ping)
-				# except:
-				self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
+				self.timeStartOfExtra = dt.datetime.now()
 				subject = ['Переработка',today] 
 				message = ['<br>%s</br>' %today,
 					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]
@@ -295,6 +291,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 				if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
 			message = ''.join(message)
 			outlook = win32.Dispatch('outlook.application')
+			# if win32ui.FindWindow(None, "Microsoft Outlook"): pass
+			# else: os.startfile("outlook")
 			namespace = outlook.GetNameSpace("MAPI")
 			user = str(namespace.CurrentUser)
 			mail = outlook.CreateItem(0)
@@ -357,7 +355,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def writeSessionLog(self,logString):
 		try:
 			with open(self.sessionLogFile,'w') as log: 
-				log.write('%s'%(logString))
+				log.write('%s -- begin'%(logString))
 		except Exception as ex:
 			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, 'writeCacheFile failed with %s' %ex)
 			raise ex
@@ -365,11 +363,16 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def getSessionStart(self):
 		try:
 			with open(self.sessionLogFile,'r') as log: 
-				line = log.readline()
-			sessionStart = dt.datetime.strptime(line, "%Y-%m-%d %H:%M:%S.%f")
-			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
+				logDate = log.readline()
+			currentDate = dt.date.today().isoformat()
+			if logDate.split(' ')[0] == currentDate:
+				if ' -- begin' in logDate:
+					timeStart = logDate.strip(' -- begin')
+					sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
+					self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
+			else: self.informationLabel.setText('Нет сведений о начале дня\nВозможно, вы не отмечались. Введите время вручную')
 		except Exception as ex:
-			self.informationLabel.setText('Не могу определить начало дня. Введите вручную')
+			self.informationLabel.setText('Не могу определить начало дня. Введите время вручную')
 
 
 def main(args):
