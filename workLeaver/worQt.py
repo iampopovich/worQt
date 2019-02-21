@@ -34,12 +34,12 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.11.0"
+		self.version = "v2.11.2"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
-		self.isWeekend = self.checkIsWeekend()
+		self.isWeekend = True#self.checkIsWeekend()
 		self.timeStartOfDay = self.convertTime("08:30:00")
 		self.timeEndOfDay = self.convertTime("17:45:00") 
 		self.isLate = self.timeStartOfDay < dt.datetime.now() < self.timeEndOfDay
@@ -279,8 +279,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 				self.timeStartOfExtra = dt.datetime.now()
 				subject = ['Переработка',today] 
 				message = ['<br>%s</br>' %today,
-					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]
-				self.writeSessionLog()			
+					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]			
 			else:
 				if self.getTime(1) is None: return None
 				subject = ['Переработка',today] 
@@ -292,6 +291,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 							'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDelta.seconds / 3600)),
 							'%s' %(''.join(activity)),'<br><b>%s<b></br>'%self.workForFree]
 				if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
+			self.writeSessionLog()	
 			message = ''.join(message)
 			outlook = win32.Dispatch('outlook.application')
 			# if win32ui.FindWindow(None, "Microsoft Outlook"): pass
@@ -350,6 +350,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 			if os.path.isfile(fileName): return fileName 
 			else: 
 				with open(fileName,'w') as cache:
+					cache.write('{}')
 					cache.close()
 				return fileName
 		except Exception as ex:
@@ -365,7 +366,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 			with open(self.sessionLogFile,'r') as log: 
 				self.sessionLogDict = json.load(log)
 			currentDate = dt.date.today().isoformat()
-			dayPoint = {'begin':self.timeStartOfExtra,'end':self.timeFinishOfExtra}
+			dayPoint = {'begin':str(self.timeStartOfExtra),'end':str(self.timeFinishOfExtra)}
 			self.sessionLogDict[currentDate] = dayPoint
 			with open(self.sessionLogFile,'w') as log: 
 				json.dump(self.sessionLogDict,log)
