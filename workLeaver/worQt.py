@@ -11,7 +11,9 @@ import sys
 import time
 #import worQt_time_lib
 from threading import Thread,Timer
-
+'''
+создать вкладку со статистикой?
+'''
 class DragAndDropList(QtWidgets.QListWidget):
 	def __init__(self, parent=None, **args):
 		super(DragAndDropList, self).__init__(parent, **args)
@@ -32,14 +34,14 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.10.2"
+		self.version = "v2.11.0"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
-		self.isWeekend = True#self.checkIsWeekend()
+		self.isWeekend = self.checkIsWeekend()
 		self.timeStartOfDay = self.convertTime("08:30:00")
-		self.timeEndOfDay = self.convertTime("17:45:00")
+		self.timeEndOfDay = self.convertTime("17:45:00") 
 		self.isLate = self.timeStartOfDay < dt.datetime.now() < self.timeEndOfDay
 		self.isBeforeStart = dt.datetime.now() < self.timeStartOfDay
 		self.timeStartOfExtra = None
@@ -48,6 +50,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.timeDeltaLate = None
 		self.timeDeltaBefore = None
 		self.workForFree = ""
+		self.sessionLogDict = {}
 		self.crashlogFile = self.getCrashLogFile()
 		self.sessionLogFile = self.getSessionLogFile()
 		self._shutdown_timer = QtCore.QTimer(self)
@@ -277,7 +280,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 				subject = ['Переработка',today] 
 				message = ['<br>%s</br>' %today,
 					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]
-				self.writeSessionLog(self.timeStartOfExtra)			
+				self.writeSessionLog()			
 			else:
 				if self.getTime(1) is None: return None
 				subject = ['Переработка',today] 
@@ -346,16 +349,26 @@ class Ui_Dialog(QtWidgets.QDialog):
 			else: os.mkdir(dirName)
 			if os.path.isfile(fileName): return fileName 
 			else: 
-				with open(fileName,'a') as cache: 
+				with open(fileName,'w') as cache:
 					cache.close()
 				return fileName
 		except Exception as ex:
 			self.writeCrashLog('getLog failed with %s' %ex)
+	
+	def clearSessionLogFile(self):
+		with open(self.sessionLogFile,'w') as cache:
+			cache.close()
+		pass
 
-	def writeSessionLog(self,logString):
+	def writeSessionLog(self):
 		try:
+			with open(self.sessionLogFile,'r') as log: 
+				self.sessionLogDict = json.load(log)
+			currentDate = dt.date.today().isoformat()
+			dayPoint = {'begin':self.timeStartOfExtra,'end':self.timeFinishOfExtra}
+			self.sessionLogDict[currentDate] = dayPoint
 			with open(self.sessionLogFile,'w') as log: 
-				log.write('%s -- begin'%(logString))
+				json.dump(self.sessionLogDict,log)
 		except Exception as ex:
 			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, 'writeCacheFile failed with %s' %ex)
 			raise ex
@@ -363,14 +376,11 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def getSessionStart(self):
 		try:
 			with open(self.sessionLogFile,'r') as log: 
-				logDate = log.readline()
+				sessionLog = json.load(log)
 			currentDate = dt.date.today().isoformat()
-			if logDate.split(' ')[0] == currentDate:
-				if ' -- begin' in logDate:
-					timeStart = logDate.strip(' -- begin')
-					sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
-					self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
-			else: self.informationLabel.setText('Нет сведений о начале дня\nВозможно, вы не отмечались. Введите время вручную')
+			timeStart = sessionLog[currentDate]['begin']
+			sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
+			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
 		except Exception as ex:
 			self.informationLabel.setText('Не могу определить начало дня. Введите время вручную')
 
