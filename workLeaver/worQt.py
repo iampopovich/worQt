@@ -34,7 +34,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.11.2"
+		self.version = "v2.11.3"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -195,9 +195,9 @@ class Ui_Dialog(QtWidgets.QDialog):
 #time section
 	def checkIsWeekend(self):
 		try:
-			today = self.today.strftime("%Y%m%d")
+			_today = self.today.strftime("%Y%m%d")
 			scontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-			chemeo_search_url = 'https://isdayoff.ru/%s' %today
+			chemeo_search_url = 'https://isdayoff.ru/%s' %_today
 			response = urllib.request.urlopen(chemeo_search_url, context = scontext, timeout = 5)
 			response = int(response.read().decode('utf-8'))
 			outVal = True if response in [1] else False
@@ -205,40 +205,37 @@ class Ui_Dialog(QtWidgets.QDialog):
 		except:	outVal = True if self.weekday in [5,6] else False
 		return outVal 
 
-	def getTime(self, mode):
-		try:
-			if mode == 2:
-				if dt.datetime.now() > self.timeEndOfDay:
-					self.informationLabel.setText("Уже слишком поздно")
-					return None
-				else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfDay
+	def getTime_MorningWork(self):
+		self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
+		if not(self.isWeekend) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
+			self.workForFree = "Отработка меньше 1 часа в будний день"	
+		return True
+
+	def getTime_ExtraWork(self):
+		today = self.today.strftime("%d.%m.%Y")
+		if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
+		elif self.weekday in [4]: self.timeStartOfExtra = self.convertTime("16:30:00")
+		else:  self.timeStartOfExtra = self.timeEndOfDay
+		self.timeFinishOfExtra = dt.datetime.now()
+		self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
+		if self.timeDelta < dt.timedelta(seconds = 1):
+			self.informationLabel.setText("Рабочий день еще продолжается")
+			return None
+		if self.timeDelta > dt.timedelta(seconds = 1): 
+			if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
+				self.workForFree = "Отработка меньше 4 часов в выходной"			
 				return True
-			elif mode == 3:
-				self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
-				if not(self.isWeekend) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
-						self.workForFree = "Отработка меньше 1 часа в будний день"	
-						return True
+			if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
+				self.workForFree = "Отработка меньше 1 часа в будний день"	
 				return True
-			else:
-				today = self.today.strftime("%d.%m.%Y")
-				if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("%s %s" %(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
-				elif self.weekday in [4]: self.timeStartOfExtra = self.convertTime("16:30:00")
-				else:  self.timeStartOfExtra = self.timeEndOfDay
-				self.timeFinishOfExtra = dt.datetime.now()
-				self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
-				if self.timeDelta < dt.timedelta(seconds = 1):
-					self.informationLabel.setText("Рабочий день еще продолжается")
-					return None
-				if self.timeDelta > dt.timedelta(seconds = 1): 
-					if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
-						self.workForFree = "Отработка меньше 4 часов в выходной"			
-						return True
-					if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
-						self.workForFree = "Отработка меньше 1 часа в будний день"	
-						return True
-					return True
-		except Exception as ex:
-			self.writeCrashLog('getTime failed with %s' %ex)
+			return True
+	
+	def getTime_AfterWorkStarted(self):
+		if dt.datetime.now() > self.timeEndOfDay:
+			self.informationLabel.setText("Уже слишком поздно")
+			return None
+		else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfDay
+		return True
 				
 	def extractTimeFormat(self,tdelta):
 		try:
@@ -261,14 +258,14 @@ class Ui_Dialog(QtWidgets.QDialog):
 		try:
 			today = self.today.strftime("%d.%m.%Y")
 			if self.sender() == self.pushButton5:
-				if self.getTime(2) is None: return None
+				if self.getTime_AfterWorkStarted() is None: return None
 				subject = ['Выход на работу',today]
 				message = ['<br>%s</br>' %today,
 							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
 							'<br>Пришел позже на : %s</br>' %self.extractTimeFormat(self.timeDeltaLate),
 							'<br>Часов в отработку: %s ч</br>' %(math.ceil(self.timeDeltaLate.seconds / 3600))]	
 			elif self.sender() == self.pushButton6:
-				if self.getTime(3) is None: return None
+				if self.getTime_MorningWork() is None: return None
 				subject = ['Переработка',today]
 				message = ['<br>%s</br>' %today,
 							'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S'),
@@ -281,7 +278,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 				message = ['<br>%s</br>' %today,
 					'<br>Пришел на работу в : %s</br>' %dt.datetime.now().strftime('%H:%M:%S')]			
 			else:
-				if self.getTime(1) is None: return None
+				if self.getTime_ExtraWork() is None: return None
 				subject = ['Переработка',today] 
 				text = (self.textEdit.toPlainText()).split('\n')
 				activity = ['<br>%s</br>' %row for row in text]
