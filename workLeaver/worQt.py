@@ -6,7 +6,7 @@ import urllib.request
 import ssl
 import os
 import math
-import json
+import sqlite3
 import sys
 import time
 #import worQt_time_lib
@@ -34,12 +34,12 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.11.3"
+		self.version = "v2.11.4"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
-		self.isWeekend = True#self.checkIsWeekend()
+		self.isWeekend = self.checkIsWeekend()
 		self.timeStartOfDay = self.convertTime("08:30:00")
 		self.timeEndOfDay = self.convertTime("17:45:00") 
 		self.isLate = self.timeStartOfDay < dt.datetime.now() < self.timeEndOfDay
@@ -50,9 +50,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.timeDeltaLate = None
 		self.timeDeltaBefore = None
 		self.workForFree = ""
-		self.sessionLogDict = {}
-		self.crashlogFile = self.getCrashLogFile()
-		self.sessionLogFile = self.getSessionLogFile()
+		self.logFile = self.getLogFile()
 		self._shutdown_timer = QtCore.QTimer(self)
 		self._shutdown_timer.setSingleShot(True)
 		self._shutdown_timer.timeout.connect(sys.exit)#self.closeUp)
@@ -175,7 +173,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 				attachment = url.url().strip('file:///')
 				self.listWidget.addItem(attachment)
 		except Exception as ex:
-			self.writeCrashLog('addAttachment failed with %s' %ex)
+			self.writeLog('crash_log',[dt.datetime.now(),'addAttachment failed with %s' %ex])
 
 	def removeAttachment(self, parent):
 		try:
@@ -185,12 +183,12 @@ class Ui_Dialog(QtWidgets.QDialog):
 				index = self.listWidget.row(item)
 				self.listWidget.takeItem(index)
 		except Exception as ex:
-			self.writeCrashLog('removeAttachment failed with %s' %ex)
+			self.writeLog('crash_log',[dt.datetime.now(),'removeAttachment failed with %s' %ex])
 	
 	def clearAttachment(self, parent):
 		try: self.listWidget.clear()
 		except Exception as ex:
-			self.writeCrashLog('clearAttachment failed with %s' %ex)
+			self.writeLog('crash_log',[dt.datetime.now(),'clearAttachment failed with %s' %ex])
 
 #time section
 	def checkIsWeekend(self):
@@ -247,8 +245,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 				if d[key] < 10 : d[key] = "0%s"%(val)
 			return ('%s:%s:%s' %(d['hrs'],d['min'],d['sec']))
 		except Exception as ex:
-			self.writeCrashLog('extractTimeFormat failed with %s' %ex)
-	
+			self.writeLog('crash_log',[dt.datetime.now(),'extractTimeFormat failed with %s' %ex])
+
 	def convertTime(self, stringTime):
 		out = dt.datetime.strptime("%s %s" %(self.today.date(),stringTime), self.FMT)
 		return out
@@ -288,7 +286,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 							'<br>Полных часов: %s ч</br>' %(math.floor(self.timeDelta.seconds / 3600)),
 							'%s' %(''.join(activity)),'<br><b>%s<b></br>'%self.workForFree]
 				if self.isWeekend: message.insert(1,'<br>Пришел в: %s</br>' %self.timeStartOfExtra.strftime('%H:%M:%S'))
-			self.writeSessionLog()	
+			self.writeLog('session_log',[self.timeStartOfExtra,self.timeFinishOfExtra])
 			message = ''.join(message)
 			outlook = win32.Dispatch('outlook.application')
 			# if win32ui.FindWindow(None, "Microsoft Outlook"): pass
@@ -307,76 +305,72 @@ class Ui_Dialog(QtWidgets.QDialog):
 			index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
 			mail.HTMLbody = mail.HTMLbody[:index + 1] + message + mail.HTMLbody[index + 1:] 
 			mail.Display(True)
-
 			#mail.send #uncomment if you want to send instead of displaying
 			#else: sys.exit(app.exec_())
 		except Exception as ex:
-			print('sendMessage failed with %s' %ex)
-			self.writeCrashLog('sendMessage failed with %s' %ex)
+			self.writeLog('crash_log',[dt.datetime.now(),'sendMessage failed with %s' %ex])
 
-#caching section
-	def getCrashLogFile(self):
+#caching section		
+	def getLogFile(self):
 		try:
 			dirName = '%s\\worqt_cache' %os.environ['APPDATA']
-			fileName = '%s\\worqt_cache\\crash_log.txt' %os.environ['APPDATA']
+			fileName = '%s\\worqt_cache\\worqt_log.db' %os.environ['APPDATA']
 			if os.path.isdir(dirName): pass
 			else: os.mkdir(dirName)
-			if os.path.isfile(fileName): return fileName 
-			else: 
-				with open(fileName,'a') as cache: 
-					cache.close()
-				return fileName
+			connection = sqlite3.connect(fileName)
+			cursor = connection.cursor()
+			try: 
+				query = '''select * from session_log limit 1'''
+				cursor.execute(query)
+			except:
+				self.createLogFile(fileName, connection, cursor)
+			connection.close()
+			return fileName 
 		except Exception as ex:
-			self.writeCrashLog('getLog failed with %s' %ex)
-		
-	def writeCrashLog(self,logString):
-		try:
-			with open(self.crashlogFile,'a') as log:
-				log.write('%s -- %s\n'%(dt.datetime.now(),logString))
-			#import pyscreenshoot - slezhka
-		except Exception as ex:
-			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, 'writeCacheFile failed with %s' %ex)
-			raise ex
-
-	def getSessionLogFile(self):
-		try:
-			dirName = '%s\\worqt_cache' %os.environ['APPDATA']
-			fileName = '%s\\worqt_cache\\session_log.txt' %os.environ['APPDATA']
-			if os.path.isdir(dirName): pass
-			else: os.mkdir(dirName)
-			if os.path.isfile(fileName): return fileName 
-			else: 
-				with open(fileName,'w') as cache:
-					cache.write('{}')
-					cache.close()
-				return fileName
-		except Exception as ex:
-			self.writeCrashLog('getLog failed with %s' %ex)
+			self.writeLog('crash_log',[dt.datetime.now(),'getLog failed with %s' %ex])
 	
-	def clearSessionLogFile(self):
-		with open(self.sessionLogFile,'w') as cache:
-			cache.close()
-		pass
+	def createLogFile(self, fname, conn, curs):
+		queries = [
+				'''create table session_log
+					(date_ text, session_start text, session_end text)''',
+				'''create table crash_log
+				(date_ text, datetime_ text, log_string varchar)'''
+			]
+		for q in queries:
+			curs.execute(q)
+			conn.commit()
 
-	def writeSessionLog(self):
+	def writeLog(self, table, values):
 		try:
-			with open(self.sessionLogFile,'r') as log: 
-				self.sessionLogDict = json.load(log)
+			query = ''
+			connection = sqlite3.connect(self.logFile)
+			cursor = connection.cursor() 
 			currentDate = dt.date.today().isoformat()
-			dayPoint = {'begin':str(self.timeStartOfExtra),'end':str(self.timeFinishOfExtra)}
-			self.sessionLogDict[currentDate] = dayPoint
-			with open(self.sessionLogFile,'w') as log: 
-				json.dump(self.sessionLogDict,log)
+			values.insert(0, currentDate)
+			if table == 'session_log':
+				st_values = ['\'%s\''%s for s in values]
+				query = 'insert into {0} values ({1})'.format(table, ','.join(st_values))	
+			if table == 'crash_log':
+				st_values = ['\'%s\''%s for s in values]
+				query = 'insert into {0} values ({1})'.format(table, ','.join(st_values))
+			print(query)
+			cursor.execute(query)
+			connection.commit()
+			connection.close()
 		except Exception as ex:
 			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, 'writeCacheFile failed with %s' %ex)
 			raise ex
 	
 	def getSessionStart(self):
 		try:
-			with open(self.sessionLogFile,'r') as log: 
-				sessionLog = json.load(log)
+			connection = sqlite3.connect(self.logFile)
+			#connection.row_factory = sqlite3.Row
+			cursor = connection.cursor()
 			currentDate = dt.date.today().isoformat()
-			timeStart = sessionLog[currentDate]['begin']
+			query = 'select session_start from session_log where date_ like \'{0}\''.format(currentDate)
+			timeStart = cursor.execute(query).fetchone()[0]
+			print(query)
+			print(timeStart)
 			sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
 			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
 		except Exception as ex:
