@@ -34,12 +34,12 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.11.4"
+		self.version = "v2.11.5"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
-		self.isWeekend = self.checkIsWeekend()
+		self.isWeekend = True# self.checkIsWeekend()
 		self.timeStartOfDay = self.convertTime("08:30:00")
 		self.timeEndOfDay = self.convertTime("17:45:00") 
 		self.isLate = self.timeStartOfDay < dt.datetime.now() < self.timeEndOfDay
@@ -314,7 +314,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def getLogFile(self):
 		try:
 			dirName = '%s\\worqt_cache' %os.environ['APPDATA']
-			fileName = '%s\\worqt_cache\\worqt_log.db' %os.environ['APPDATA']
+			fileName = '%s\\worqt_cache\\worqt_log.sqlite' %os.environ['APPDATA']
 			if os.path.isdir(dirName): pass
 			else: os.mkdir(dirName)
 			connection = sqlite3.connect(fileName)
@@ -342,18 +342,30 @@ class Ui_Dialog(QtWidgets.QDialog):
 
 	def writeLog(self, table, values):
 		try:
+			print(table)
+			print(values)
 			query = ''
 			connection = sqlite3.connect(self.logFile)
 			cursor = connection.cursor() 
 			currentDate = dt.date.today().isoformat()
 			values.insert(0, currentDate)
 			if table == 'session_log':
-				st_values = ['\'%s\''%s for s in values]
-				query = 'insert into {0} values ({1})'.format(table, ','.join(st_values))	
+				query = 'select * from session_log where date_ like \'{0}\''.format(currentDate)
+				if cursor.execute(query).fetchone() is None:
+					st_values = ['\'%s\''%s for s in values]
+					query = 'insert into {0} values ({1})'.format(table, ','.join(st_values))	
+				else:				
+					query = '''update session_log 
+					set session_end = \'{0}\' 
+					where date_ like \'{1}\' and
+					session_end is \'None\''''.format(self.timeFinishOfExtra,currentDate)
+					cursor.execute(query)
+					connection.commit()
+					connection.close()
+					return None
 			if table == 'crash_log':
 				st_values = ['\'%s\''%s for s in values]
 				query = 'insert into {0} values ({1})'.format(table, ','.join(st_values))
-			print(query)
 			cursor.execute(query)
 			connection.commit()
 			connection.close()
@@ -369,8 +381,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 			currentDate = dt.date.today().isoformat()
 			query = 'select session_start from session_log where date_ like \'{0}\''.format(currentDate)
 			timeStart = cursor.execute(query).fetchone()[0]
-			print(query)
-			print(timeStart)
 			sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
 			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
 		except Exception as ex:
