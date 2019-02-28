@@ -32,7 +32,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.11.6"
+		self.version = "v2.11.7"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -348,23 +348,23 @@ class Ui_Dialog(QtWidgets.QDialog):
 			currentDate = dt.date.today().isoformat()
 			values.insert(0, currentDate)
 			if table == 'session_log':
-				query = 'select * from session_log where date_ like \'{0}\''.format(currentDate)
-				if cursor.execute(query).fetchone() is None:
-					st_values = ['\'%s\''%s for s in values]
-					query = 'insert into {0} values ({1})'.format(table, ','.join(st_values))	
+				query = 'select * from session_log where date_ like :date'
+				if cursor.execute(query,{'date': currentDate}).fetchone() is None:
+					st_values = ','.join(['\'%s\''%s for s in values])
+					query = 'insert into :table values (:values)'	
 				else:				
 					query = '''update session_log 
-					set session_end = \'{0}\' 
-					where date_ like \'{1}\' and
-					session_end is \'None\''''.format(self.timeFinishOfExtra,currentDate)
-					cursor.execute(query)
+					set session_end = :endTime 
+					where date_ like :date and
+					session_end is \'None\''''
+					cursor.execute(query,{'endTime': self.timeFinishOfExtra, 'date':currentDate})
 					connection.commit()
 					connection.close()
 					return None
 			if table == 'crash_log':
-				st_values = ['\'%s\''%s for s in values]
-				query = 'insert into {0} values ({1})'.format(table, ','.join(st_values))
-			cursor.execute(query)
+				st_values = ','.join(['\'%s\''%s for s in values])
+				query = 'insert into :table values (:values)'
+			cursor.execute(query, {'table': table, 'values': st_values})
 			connection.commit()
 			connection.close()
 		except Exception as ex:
@@ -377,8 +377,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 			#connection.row_factory = sqlite3.Row
 			cursor = connection.cursor()
 			currentDate = dt.date.today().isoformat()
-			query = 'select session_start from session_log where date_ like \'{0}\''.format(currentDate)
-			timeStart = cursor.execute(query).fetchone()[0]
+			query = 'select session_start from session_log where date_ like :date'
+			timeStart = cursor.execute(query,{'date':currentDate}).fetchone()[0]
 			sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
 			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
 			self.timeEdit.setEnabled(False)
