@@ -8,9 +8,7 @@ import os
 import math
 import sqlite3
 import sys
-import time
 #import worQt_time_lib
-from threading import Thread,Timer
 '''
 создать вкладку со статистикой?
 '''
@@ -34,7 +32,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.11.5"
+		self.version = "v2.11.6"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -383,9 +381,12 @@ class Ui_Dialog(QtWidgets.QDialog):
 			timeStart = cursor.execute(query).fetchone()[0]
 			sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
 			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
+			self.timeEdit.setEnabled(False)
+			self.pushButton4.setEnabled(False)
 		except Exception as ex:
+			self.timeEdit.setEnabled(True)
+			self.pushButton4.setEnabled(True)
 			self.informationLabel.setText('Не могу определить начало дня. Введите время вручную')
-
 
 def main(args):
 	import sys
