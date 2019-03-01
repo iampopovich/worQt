@@ -30,12 +30,12 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.12.2"
+		self.version = "v2.12.3"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
-		self.isWeekend = True# self.checkIsWeekend()
+		self.isWeekend = self.checkIsWeekend()
 		self.timeStartOfDay = self.convertTime("08:30:00")
 		self.timeEndOfDay = self.convertTime("17:45:00") 
 		self.isLate = self.timeStartOfDay < dt.datetime.now() < self.timeEndOfDay
@@ -155,7 +155,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 #tab2
 		self.tab_2 = QtWidgets.QWidget()
 		self.tab_2.setObjectName("tab_2")
-		self.tabWidget.addTab(self.tab_2, "Статистика")
+		self.tabWidget.addTab(self.tab_2, "Статистика (тест)")
 		#
 		self.gridLayoutWidget2 = QtWidgets.QWidget(self.tab_2)
 		self.gridLayoutWidget2.setGeometry(QtCore.QRect(0, 0, 350, 360))
@@ -320,6 +320,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 				if self.isWeekend: message.insert(1,"<br>Пришел в: %s</br>" %self.timeStartOfExtra.strftime("%H:%M:%S"))
 			self.writeLog("session_log",[self.timeStartOfExtra,self.timeFinishOfExtra])
 			message = "".join(message)
+			#try:
 			outlook = win32.Dispatch("outlook.application")
 			# if win32ui.FindWindow(None, "Microsoft Outlook"): pass
 			# else: os.startfile("outlook")
@@ -339,6 +340,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 			mail.Display(True)
 			#mail.send #uncomment if you want to send instead of displaying
 			#else: sys.exit(app.exec_())
+			#except: pass
 		except Exception as ex:
 			self.writeLog("crash_log",[dt.datetime.now(),"sendMessage failed with %s" %ex])
 
