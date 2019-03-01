@@ -9,9 +9,7 @@ import math
 import sqlite3
 import sys
 #import worQt_time_lib
-"""
-создать вкладку со статистикой?
-"""
+
 class DragAndDropList(QtWidgets.QListWidget):
 	def __init__(self, parent=None, **args):
 		super(DragAndDropList, self).__init__(parent, **args)
@@ -32,7 +30,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.12.1"
+		self.version = "v2.12.2"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
@@ -167,21 +165,24 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.gridLayout2.setContentsMargins(0, 0, 0, 0)
 		self.gridLayout2.setObjectName("gridLayout2")
 		#
+		self.pushButton7 = QtWidgets.QPushButton(self.gridLayoutWidget2)
+		self.pushButton7.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.pushButton7.setObjectName("pushButton7")
+		self.pushButton7.setText("Обновить таблицу")
+		self.pushButton7.clicked.connect(self.fillview)
+		self.gridLayout2.addWidget(self.pushButton7, 0, 0, 1, 1)
+		#
 		self.tableWidget = QtWidgets.QTableWidget()
 		self.tableWidget.setObjectName("tableView")
-		self.gridLayout2.addWidget(self.tableWidget, 0,0,1,1)
+		self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+		self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+		self.gridLayout2.addWidget(self.tableWidget, 1,0,1,1)
 		#
 #
 		self.retranslateUi(Dialog)
 		if self.isWeekend: self.getSessionStart()
 		self.fillview()
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
-
-	def fillview(self):
-		for i in range(10):
-			self.tableWidget.insertRow(i)
-			self.tableWidget.insertColumn(i)
-			self.tableWidget.setItem(i,i, QtWidgets.QTableWidgetItem("hehehehehehehehe {0}".format(i)))
 
 	def retranslateUi(self, Dialog):
 		_translate = QtCore.QCoreApplication.translate
@@ -358,6 +359,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 			connection.close()
 			return fileName 
 		except Exception as ex:
+			connection.close()
 			self.writeLog("crash_log",[dt.datetime.now(),"getLog failed with %s" %ex])
 	
 	def createLogFile(self, fname, conn, curs):
@@ -373,34 +375,33 @@ class Ui_Dialog(QtWidgets.QDialog):
 
 	def writeLog(self, table, values):
 		try:
-			print(table)
-			print(values)
 			query = ""
 			connection = sqlite3.connect(self.logFile)
 			cursor = connection.cursor() 
 			currentDate = dt.date.today().isoformat()
 			values.insert(0, currentDate)
 			if table == "session_log":
-				query = "select * from session_log where date_ like :date"
-				if cursor.execute(query,{"date": currentDate}).fetchone() is None:
+				query = "select * from session_log where date_ like \"{0}\"".format(currentDate)
+				if cursor.execute(query).fetchone() is None:
 					st_values = ",".join(["\"%s\""%s for s in values])
-					query = "insert into :table values (:values)"	
+					query = "insert into {0} values ({1})".format(table,st_values)	
 				else:				
 					query = """update session_log 
-					set session_end = :endTime 
-					where date_ like :date and
-					session_end is \"None\""""
-					cursor.execute(query,{"endTime": self.timeFinishOfExtra, "date":currentDate})
+					set session_end = \"{0}\" 
+					where date_ like \"{1}\" and
+					session_end is \"None\"""".format(self.timeFinishOfExtra, currentDate)
+					cursor.execute(query)
 					connection.commit()
 					connection.close()
 					return None
 			if table == "crash_log":
 				st_values = ",".join(["\"%s\""%s for s in values])
-				query = "insert into :table values (:values)"
-			cursor.execute(query, {"table": table, "values": st_values})
+				query = "insert into {0} values ({1})".format(table,st_values)
+			cursor.execute(query)
 			connection.commit()
 			connection.close()
 		except Exception as ex:
+			connection.close()
 			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, "writeCacheFile failed with %s" %ex)
 			raise ex
 	
@@ -410,16 +411,42 @@ class Ui_Dialog(QtWidgets.QDialog):
 			#connection.row_factory = sqlite3.Row
 			cursor = connection.cursor()
 			currentDate = dt.date.today().isoformat()
-			query = "select session_start from session_log where date_ like :date"
-			timeStart = cursor.execute(query,{"date":currentDate}).fetchone()[0]
+			query = "select session_start from session_log where date_ like \"{0}\"".format(currentDate)
+			timeStart = cursor.execute(query).fetchone()[0]
 			sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
 			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
 			self.timeEdit.setEnabled(False)
 			self.pushButton4.setEnabled(False)
+			connection.close()
 		except Exception as ex:
+			connection.close()
 			self.timeEdit.setEnabled(True)
 			self.pushButton4.setEnabled(True)
 			self.informationLabel.setText("Не могу определить начало дня. Введите время вручную")
+
+	def fillview(self):
+		try:
+			self.tableWidget.setColumnCount(0)
+			self.tableWidget.setRowCount(0)
+			connection = sqlite3.connect(self.logFile)
+			cursor = connection.cursor()
+			cursor.execute('''SELECT date_ as "Дата", 
+							session_start as "Начало смены",
+							session_end as "Конец смены"
+							FROM session_log''')
+			names = list(map(lambda x: x[0], cursor.description))
+			[self.tableWidget.insertColumn(i) for i in range(len(names))]
+			for row, form in enumerate(cursor):
+				self.tableWidget.insertRow(row)
+				for column, item in enumerate(form):
+					# self.tableWidget.insertColumn(column)
+					self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
+			self.tableWidget.setHorizontalHeaderLabels(names)
+			connection.close()
+		except Exception as ex:
+			connection.close()
+			raise
+			self.writeLog("crash_log",[dt.datetime.now(),"fillView failed with %s" %ex])
 
 def main(args):
 	import sys
