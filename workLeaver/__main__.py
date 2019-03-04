@@ -1,12 +1,10 @@
-import sys
 import os
-
-def get_current_os():
-  pass
+import worQt_nt
 
 def main():
-  get_current_os()
-  pass
-  
+	if os.name == 'nt':
+		worQt_nt.main()
+	else: pass
+
 if __name__ == '__main__':
-  main()
+	main()
