@@ -28,7 +28,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v2.12.4"
+		# self.version = "v2.12.4"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
