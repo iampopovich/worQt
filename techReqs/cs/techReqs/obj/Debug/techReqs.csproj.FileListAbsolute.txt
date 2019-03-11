@@ -1,8 +1,0 @@
-C:\Users\PopovAV\Documents\SharpDevelop Projects\techReqs\techReqs\bin\Debug\techReqs.exe.config
-C:\Users\PopovAV\Documents\SharpDevelop Projects\techReqs\techReqs\bin\Debug\techReqs.exe
-C:\Users\PopovAV\Documents\SharpDevelop Projects\techReqs\techReqs\bin\Debug\techReqs.pdb
-C:\Users\PopovAV\Documents\SharpDevelop Projects\techReqs\techReqs\obj\Debug\techReqs.csprojResolveAssemblyReference.cache
-C:\Users\PopovAV\Documents\SharpDevelop Projects\techReqs\techReqs\obj\Debug\techReqs.exe
-C:\Users\PopovAV\Documents\SharpDevelop Projects\techReqs\techReqs\obj\Debug\techReqs.pdb
-C:\Users\PopovAV\Documents\SharpDevelop Projects\techReqs\techReqs\obj\Debug\techReqs.MainForm.resources
-C:\Users\PopovAV\Documents\SharpDevelop Projects\techReqs\techReqs\obj\Debug\techReqs.csproj.GenerateResource.Cache
