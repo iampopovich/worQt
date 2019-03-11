@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtCore, QtGui, QtWidgets
 import datetime as dt
-import win32com.client as win32  
 import urllib.request
 import sqlite3
 import math
 import ssl
 import sys
 import os
-#import worQt_time_lib
 
 class DragAndDropList(QtWidgets.QListWidget):
 	def __init__(self, parent=None, **args):
@@ -358,8 +356,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 #caching section		
 	def getLogFile(self):
 		try:
-			dirName = "{0}\\worqt_cache".format(os.environ["APPDATA"])
-			fileName = "{0}\\worqt_cache\\worqt_log.sqlite".format(os.environ["APPDATA"])
+			dirName = "{0}/.worqt_cache".format(os.environ["HOME"])
+			fileName = "{0}/.worqt_cache/worqt_log.sqlite".format(os.environ["HOME"])
 			if os.path.isdir(dirName): pass
 			else: os.mkdir(dirName)
 			connection = sqlite3.connect(fileName)
