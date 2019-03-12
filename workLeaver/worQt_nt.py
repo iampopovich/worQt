@@ -7,8 +7,10 @@ import sqlite3
 import math
 import ssl
 import sys
+import csv
 import os
-#import worQt_time_lib
+import worQt_time_lib
+import worQt_cache_lib
 
 class DragAndDropList(QtWidgets.QListWidget):
 	def __init__(self, parent=None, **args):
@@ -30,14 +32,14 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		# self.version = "v2.12.4"
+		self.version = "v2.13.1"
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = dt.datetime.today()
 		self.weekday = self.today.weekday()
 		self.weekendSync = False
-		self.isWeekend = self.checkIsWeekend()
-		self.timeStartOfDay = self.convertTime("08:30:00")
-		self.timeEndOfDay = self.convertTime("17:45:00") 
+		self.isWeekend = worQt_time_lib.checkIsWeekend(self)
+		self.timeStartOfDay = worQt_time_lib.convertTime(self,"08:30:00")
+		self.timeEndOfDay = worQt_time_lib.convertTime(self,"17:45:00") 
 		self.isLate = self.timeStartOfDay < dt.datetime.now() < self.timeEndOfDay
 		self.isBeforeStart = dt.datetime.now() < self.timeStartOfDay
 		self.timeStartOfExtra = None
@@ -46,7 +48,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.timeDeltaLate = None
 		self.timeDeltaBefore = None
 		self.workForFree = ""
-		self.logFile = self.getLogFile()
+		self.logFile = worQt_cache_lib.getLogFile(self)
 		self._shutdown_timer = QtCore.QTimer(self)
 		self._shutdown_timer.setSingleShot(True)
 		self._shutdown_timer.timeout.connect(sys.exit)#self.closeUp)
@@ -189,7 +191,17 @@ class Ui_Dialog(QtWidgets.QDialog):
 		#
 #
 		self.retranslateUi(Dialog)
-		if self.isWeekend: self.getSessionStart()
+		if self.isWeekend: 
+			response = self.getSessionStart() 
+			if not(response):
+				self.timeEdit.setEnabled(True)
+				self.pushButton4.setEnabled(True)
+				self.informationLabel.setText("Не могу определить начало дня. Введите время вручную")
+			else: 
+				self.timeEdit.setTime(QtCore.QTime(response.hour,response.minute,response.second))
+				self.timeEdit.setEnabled(False)
+				self.pushButton4.setEnabled(False)
+
 		self.fillview()
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
@@ -231,84 +243,23 @@ class Ui_Dialog(QtWidgets.QDialog):
 		except Exception as ex:
 			self.writeLog("crash_log",[dt.datetime.now(),"clearAttachment failed with {0}".format(ex)])
 
-#time section
-	def checkIsWeekend(self):
-		try:
-			_today = self.today.strftime("%Y%m%d")
-			scontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-			chemeo_search_url = "https://isdayoff.ru/{0}".format(_today)
-			response = urllib.request.urlopen(chemeo_search_url, context = scontext, timeout = 5)
-			response = int(response.read().decode("utf-8"))
-			outVal = True if response in [1] else False
-			self.weekendSync = True
-		except:	outVal = True if self.weekday in [5,6] else False
-		return outVal 
-
-	def getTime_MorningWork(self):
-		self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
-		if not(self.isWeekend) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
-			self.workForFree = "Отработка меньше 1 часа в будний день"	
-		return True
-
-	def getTime_ExtraWork(self):
-		today = self.today.strftime("%d.%m.%Y")
-		if self.isWeekend: self.timeStartOfExtra = dt.datetime.strptime("{0} {1}".format(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
-		elif self.weekday in [4]: self.timeStartOfExtra = self.convertTime("16:30:00")
-		else:  self.timeStartOfExtra = self.timeEndOfDay
-		self.timeFinishOfExtra = dt.datetime.now()
-		self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
-		if self.timeDelta < dt.timedelta(seconds = 1):
-			self.informationLabel.setText("Рабочий день еще продолжается")
-			return None
-		if self.timeDelta > dt.timedelta(seconds = 1): 
-			if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
-				self.workForFree = "Отработка меньше 4 часов в выходной"			
-				return True
-			if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
-				self.workForFree = "Отработка меньше 1 часа в будний день"	
-				return True
-			return True
-	
-	def getTime_AfterWorkStarted(self):
-		if dt.datetime.now() > self.timeEndOfDay:
-			self.informationLabel.setText("Уже слишком поздно")
-			return None
-		else: self.timeDeltaLate = dt.datetime.now() - self.timeStartOfDay
-		return True
-				
-	def extractTimeFormat(self,tdelta):
-		try:
-			d = {}
-			d["days"] = tdelta.days
-			d["hrs"], rem = divmod(tdelta.seconds, 3600)
-			d["min"], d["sec"] = divmod(rem, 60)
-			for key,val in d.items():
-				if d[key] < 10 : d[key] = "0{0}".format(val)
-			return ("{0}:{1}:{2}".format(d["hrs"],d["min"],d["sec"]))
-		except Exception as ex:
-			self.writeLog("crash_log",[dt.datetime.now(),"extractTimeFormat failed with {0}".format(ex)])
-
-	def convertTime(self, stringTime):
-		out = dt.datetime.strptime("{0} {1}".format(self.today.date(),stringTime), self.FMT)
-		return out
-
 #base function section
 	def sendMessage(self, parent):
 		try:
 			today = self.today.strftime("%d.%m.%Y")
 			if self.sender() == self.pushButton5:
-				if self.getTime_AfterWorkStarted() is None: return None
+				if worQt_time_lib.getTime_AfterWorkStarted(self) is None: return None
 				subject = ["Выход на работу",today]
 				message = ["<br>{0}</br>".format(today),
 							"<br>Пришел на работу в : {0}</br>".format(dt.datetime.now().strftime("%H:%M:%S")),
-							"<br>Пришел позже на : {0}</br>".format(self.extractTimeFormat(self.timeDeltaLate)),
+							"<br>Пришел позже на : {0}</br>".format(worQt_time_lib.extractTimeFormat(self,self.timeDeltaLate)),
 							"<br>Часов в отработку: {0} ч</br>".format(math.ceil(self.timeDeltaLate.seconds / 3600))]	
 			elif self.sender() == self.pushButton6:
-				if self.getTime_MorningWork() is None: return None
+				if worQt_time_lib.getTime_MorningWork(self) is None: return None
 				subject = ["Переработка",today]
 				message = ["<br>{0}</br>".format(today),
 							"<br>Пришел на работу в : {0}</br>".format(dt.datetime.now().strftime("%H:%M:%S")),
-							"<br>Пришел раньше на : {0}</br>".format(self.extractTimeFormat(self.timeDeltaBefore)),
+							"<br>Пришел раньше на : {0}</br>".format(worQt_time_lib.extractTimeFormat(self,self.timeDeltaBefore)),
 							"<br>Полных часов: {0} ч</br>".format(math.floor(self.timeDeltaBefore.seconds / 3600)),
 							"<br><b>{0}<b></br>".format(self.workForFree)]
 			elif self.sender() == self.pushButton4:
@@ -323,12 +274,12 @@ class Ui_Dialog(QtWidgets.QDialog):
 				activity = ["<br>{0}</br>".format(row) for row in text]
 				message = ["<br>{0}</br>".format(today),
 							"<br>Ушел в : {0}</br>".format(self.timeFinishOfExtra.strftime("%H:%M:%S")),
-							"<br>Переработано: {0}</br>".format(self.extractTimeFormat(self.timeDelta)),
+							"<br>Переработано: {0}</br>".format(worQt_time_lib.extractTimeFormat(self,self.timeDelta)),
 							"<br>Полных часов: {0} ч</br>".format(math.floor(self.timeDelta.seconds / 3600)),
 							"{0}".format("".join(activity)),
 							"<br><b>{0}<b></br>".format(self.workForFree)]
 				if self.isWeekend: message.insert(1,"<br>Пришел в: {0}</br>".format(self.timeStartOfExtra.strftime("%H:%M:%S")))
-			self.writeLog("session_log",[self.timeStartOfExtra,self.timeFinishOfExtra,None,None,None])
+			worQt_cache_lib.writeLog(self,"session_log",[self.timeStartOfExtra,self.timeFinishOfExtra,None,None,None])
 			message = "".join(message)
 			outlook = win32.Dispatch("outlook.application")
 			# if win32ui.FindWindow(None, "Microsoft Outlook"): pass
@@ -352,106 +303,9 @@ class Ui_Dialog(QtWidgets.QDialog):
 			#mail.send #uncomment if you want to send instead of displaying
 			#else: sys.exit(app.exec_())
 		except Exception as ex:
-			raise
 			self.writeLog("crash_log",[dt.datetime.now(),"sendMessage failed with {0}".format(ex)])
 
 #caching section		
-	def getLogFile(self):
-		try:
-			dirName = "{0}\\worqt_cache".format(os.environ["APPDATA"])
-			fileName = "{0}\\worqt_cache\\worqt_log.sqlite".format(os.environ["APPDATA"])
-			if os.path.isdir(dirName): pass
-			else: os.mkdir(dirName)
-			connection = sqlite3.connect(fileName)
-			cursor = connection.cursor()
-			try: 
-				query = """select * from session_log limit 1"""
-				cursor.execute(query)
-			except:
-				if self.createLogFile(fileName, connection, cursor): pass #а вот тут надо вдолбить обработчик
-				else: pass
-			connection.close()
-			return fileName 
-		except Exception as ex:
-			connection.close()
-			self.writeLog("crash_log",[dt.datetime.now(),"getLog failed with {0}".format(ex)])
-	
-	def createLogFile(self, fname, conn, curs):
-		try:
-			queries = [
-				"""create table session_log
-					(date_ text, 
-					session_start text,
-					session_end text,
-					duration text,
-					duration_full text,
-					index_ text
-					)""",
-				"""create table crash_log
-				(date_ text, datetime_ text, log_string varchar)"""
-				]
-			for q in queries:
-				curs.execute(q)
-				conn.commit()
-			return True
-		except:	return False
-
-	def writeLog(self, table, values):
-		try:
-			query = ""
-			connection = sqlite3.connect(self.logFile)
-			cursor = connection.cursor() 
-			currentDate = dt.date.today().isoformat()
-			values.insert(0, currentDate)
-			if table == "session_log":
-				query = "select * from session_log where date_ like \"{0}\"".format(currentDate)
-				if cursor.execute(query).fetchone() is None:
-					st_values = ",".join(["\"{0}\"".format(v) for v in values])
-					query = "insert into {0} values ({1})".format(table,st_values)	
-				else:				
-					query = """update session_log 
-					set session_end = \"{0}\",
-						duration = \"{1}\",
-						duration_full = \"{2}\",
-						index_ = \"{3}\"
-					where date_ like \"{4}\" and
-					session_end is \"None\"""".format(self.timeFinishOfExtra,
-													self.extractTimeFormat(self.timeDelta),
-													math.floor(self.timeDelta.seconds / 3600),
-													[2 if self.isWeekend else 1.5],
-													currentDate)
-					cursor.execute(query)
-					connection.commit()
-					connection.close()
-					return None
-			if table == "crash_log":
-				st_values = ",".join(["\"{0}\"".format(v) for v in values])
-				query = "insert into {0} values ({1})".format(table,st_values)
-			cursor.execute(query)
-			connection.commit()
-			connection.close()
-		except Exception as ex:
-			connection.close()
-			#self.theUI.NXMessageBox.Show(self.moduleName, self.MSG_Error, "writeCacheFile failed with {0}".format(%ex) )
-	
-	def getSessionStart(self):
-		try:
-			connection = sqlite3.connect(self.logFile)
-			#connection.row_factory = sqlite3.Row
-			cursor = connection.cursor()
-			currentDate = dt.date.today().isoformat()
-			query = "select session_start from session_log where date_ like \"{0}\"".format(currentDate)
-			timeStart = cursor.execute(query).fetchone()[0]
-			sessionStart = dt.datetime.strptime(timeStart, "%Y-%m-%d %H:%M:%S.%f")
-			self.timeEdit.setTime(QtCore.QTime(sessionStart.hour,sessionStart.minute,sessionStart.second))
-			self.timeEdit.setEnabled(False)
-			self.pushButton4.setEnabled(False)
-			connection.close()
-		except Exception as ex:
-			connection.close()
-			self.timeEdit.setEnabled(True)
-			self.pushButton4.setEnabled(True)
-			self.informationLabel.setText("Не могу определить начало дня. Введите время вручную")
 
 	def fillview(self):
 		try:
@@ -482,9 +336,19 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def table_export(self):
 		destination = QtWidgets.QFileDialog.getExistingDirectoryUrl()
 		print(destination)
+		try:
+			connection = sqlite3.connect(self.logFile)
+			cursor = connection.cursor()
+			rows = cursor.execute('select * from session_log')
+			names = list(map(lambda x: x[0], cursor.description))
+			csvwriter = csv.writer(open('{0}\\выгрузка_{1}.csv','a'))
+			csvwriter.writerow(names)
+			for i in rows:
+				csvwriter.writerow(i)
+		except: raise
 		pass
 
-def main(args):
+def main():
 	app = QtWidgets.QApplication(sys.argv)
 	Dialog = QtWidgets.QDialog()
 	ui = Ui_Dialog()
@@ -493,4 +357,4 @@ def main(args):
 	app.exec_()
 
 if __name__ == "__main__":
-	main(sys.argv)	
+	main()	
