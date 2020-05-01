@@ -1,8 +1,26 @@
 import os
 import math
-import sqlite3
-import datetime as dt
-import worQt_time_lib
+import datetime
+
+def set_file_error(self):
+	file_error = '{}_{}_error.log'.format(datetime.now().isoformat(),os.login())
+	if os.path.exists(file_error):
+		self.file_error = file_error
+	pass
+
+def set_file_log(self):
+	file_log = '{}_{}.log'.format(datetime.now().isoformat(),os.login())
+	if os.path.exists(file_log):
+		self.file_log = file_log 
+	pass
+
+def create_file_log(self):
+	with open('{}_{}.log','a') as out_log:
+		out_log.close()
+
+def create_file_error(self):
+	with open('{}_{}_error.log','a') as out_error:
+		out_error.close()
 
 def getLogFile(self):
 	try:
