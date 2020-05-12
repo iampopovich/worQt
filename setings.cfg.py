@@ -1,0 +1,12 @@
+{
+	'working_hours':
+		{
+			{'MON':{'start':'','duration':''}},
+			{'TUE':{'start':'','duration':''}},
+			{'WED':{'start':'','duration':''}},
+			{'THU':{'start':'','duration':''}},
+			{'FRI':{'start':'','duration':''}},
+			{'SAT':{'start':'','duration':''}},
+			{'SUN':{'start':'','duration':''}},
+		}
+}
