@@ -53,6 +53,12 @@ def set_file_config(self, config):
 def get_file_config(self):
 	pass
 
+def log_dump_crash(self):
+	pass
+
+def log_write_action(self):
+	pass
+
 # def getLogFile(self):
 # 	try:
 # 		dirName = "{0}\\worqt_cache".format(os.environ["APPDATA"])
