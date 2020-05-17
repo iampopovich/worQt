@@ -2,8 +2,28 @@
 import ssl
 import urllib
 import requests
+import urllib.request
 import datetime as dt
 
+def get_work_time_start():
+	pass
+
+def get_today():
+	return dt.datetime.today()
+
+def is_time_before_work_start():
+	start = instant.time_start_of_day
+	return  dt.datetime.now() < start
+
+def is_late(instant):
+	start = instant.time_start_of_day
+	end = instant.time_end_of_day
+	return start < dt.datetime.now() < end
+
+def is_time_after_work_end(instant):
+	end = instant.time_end_of_day
+	return dt.datetime.now() > end
+	
 def check_is_weekend(self):
 	try:
 		_today = self.today.strftime("%Y%m%d")

@@ -1,18 +1,12 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtCore, QtGui, QtWidgets
-import datetime as dt
-# import win32com.client as win32  
-import smtplib
-from email.mime.text import MIMEText
-import urllib.request
-# import sqlite3
-import math
-import ssl
 import sys
 import csv
 import os
 import worQt_time_lib
 import worQt_cache_lib
+import worQt_mail_worker
+import worQt_config
 
 class DragAndDropList(QtWidgets.QListWidget):
 	def __init__(self, parent=None, **args):
@@ -35,23 +29,23 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
 		self.version = "v3.0.1"
+		self.config = worQt_config.get_config()
 		self.FMT = "%Y-%m-%d %H:%M:%S"
-		self.today = dt.datetime.today()
+		self.today = worQt_time_lib.get_today()
 		self.weekday = self.today.weekday()
-		self.weekendSync = False
 		self.is_weekend = worQt_time_lib.check_is_weekend(self)
-		self.time_start_of_day = worQt_time_lib.convert_time(self,"08:30:00") #refactor config
-		self.time_end_of_day = worQt_time_lib.convert_time(self,"17:45:00") #refactor config
-		self.is_late = self.time_start_of_day < dt.datetime.now() < self.time_end_of_day
-		self.is_before_start = dt.datetime.now() < self.time_start_of_day
+		# self.time_start_of_day = self.config['work_start'] #worQt_time_lib.convert_time(self,"08:30:00") #refactor config
+		# self.time_end_of_day = solf.config['worl_end'] #worQt_time_lib.convert_time(self,"17:45:00") #refactor config
+		# self.is_late = worQt_time_lib.is_late(self)
+		# self.is_before_start = worQt_time_lib.is_time_before_work_start(self)
 		self.time_start_of_extra = None
 		self.time_finish_of_extra = None
-		self.timeDelta = None
-		self.timeDeltaLate = None
-		self.timeDeltaBefore = None
-		self.workForFree = ""
+		self.time_delta = None
+		self.time_delta_late = None
+		self.time_delta_before = None
+		self.work_for_free = ""
 		self.shutdown_time = 2700000
-		self.logFile = worQt_cache_lib.get_file_log(self)
+		self.file_log = worQt_cache_lib.get_file_log(self)
 		self.init_shutdown_timer()
 		self.workfolder = os.getcwd()
 
@@ -107,7 +101,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton.setObjectName("pushButton")
 		self.pushButton.setText("Отправить письмо")
-		self.pushButton.clicked.connect(self.message_send)
+		self.pushButton.clicked.connect(worQt_mail_worker.message_send)
 		self.gridLayout1.addWidget(self.pushButton, 4, 2, 1, 1)
 		# 
 		self.pushButton1 = QtWidgets.QPushButton(self.gridLayoutWidget1)
@@ -136,7 +130,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton4.setObjectName("pushButton4")
 		self.pushButton4.setText("Отметиться")
 		self.pushButton4.setEnabled(self.is_weekend)
-		self.pushButton4.clicked.connect(self.message_send)
+		self.pushButton4.clicked.connect(worQt_mail_worker.message_send)
 		self.gridLayout1.addWidget(self.pushButton4, 3, 2, 1, 1)
 		# 
 		self.pushButton5 = QtWidgets.QPushButton(self.gridLayoutWidget1)
@@ -144,7 +138,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton5.setObjectName("pushButton5")
 		self.pushButton5.setText("Пришел позже 8:30")
 		self.pushButton5.setEnabled(not self.is_weekend if self.is_weekend else self.is_late)
-		self.pushButton5.clicked.connect(self.message_send)
+		self.pushButton5.clicked.connect(worQt_mail_worker.message_send)
 		self.gridLayout1.addWidget(self.pushButton5, 4, 0, 1, 1)
 		# 
 		self.pushButton6 = QtWidgets.QPushButton(self.gridLayoutWidget1)
@@ -152,7 +146,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton6.setObjectName("pushButton6")
 		self.pushButton6.setText("Пришел раньше 8:30")
 		self.pushButton6.setEnabled(not self.is_weekend if self.is_weekend else self.is_before_start)
-		self.pushButton6.clicked.connect(self.message_send)
+		self.pushButton6.clicked.connect(worQt_mail_worker.message_send)
 		self.gridLayout1.addWidget(self.pushButton6, 4, 1, 1, 1)
 		#
 		#tab2
@@ -189,18 +183,18 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.gridLayout2.addWidget(self.tableWidget, 1,0,1,8)
 		#
 		self.retranslateUi(Dialog)
-		if self.is_weekend: 
-			response = self.getSessionStart() 
-			if not(response):
-				self.timeEdit.setEnabled(True)
-				self.pushButton4.setEnabled(True)
-				self.informationLabel.setText("Не могу определить начало дня. Введите время вручную")
-			else: 
-				self.timeEdit.setTime(QtCore.QTime(response.hour,response.minute,response.second))
-				self.timeEdit.setEnabled(False)
-				self.pushButton4.setEnabled(False)
+		# if self.is_weekend: 
+		# 	response = self.getSessionStart() 
+		# 	if not(response):
+		# 		self.timeEdit.setEnabled(True)
+		# 		self.pushButton4.setEnabled(True)
+		# 		self.informationLabel.setText("Не могу определить начало дня. Введите время вручную")
+		# 	else: 
+		# 		self.timeEdit.setTime(QtCore.QTime(response.hour,response.minute,response.second))
+		# 		self.timeEdit.setEnabled(False)
+		# 		self.pushButton4.setEnabled(False)
 
-		self.fillview()
+		# self.fillview()
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 	def init_shutdown_timer(self):
@@ -249,98 +243,39 @@ class Ui_Dialog(QtWidgets.QDialog):
 
 	#base function section
 	#refactor with messages' templates
-	def message_send(self, parent):
-		try:
-			today = self.today.strftime("%d.%m.%Y")
-			if self.sender() == self.pushButton5:
-				if worQt_time_lib.getTime_AfterWorkStarted(self) is None: return None
-				subject = ["Выход на работу",today]
-				message = ["<br>{0}</br>".format(today),
-							"<br>Пришел на работу в : {0}</br>".format(dt.datetime.now().strftime("%H:%M:%S")),
-							"<br>Пришел позже на : {0}</br>".format(worQt_time_lib.extractTimeFormat(self,self.timeDeltaLate)),
-							"<br>Часов в отработку: {0} ч</br>".format(math.ceil(self.timeDeltaLate.seconds / 3600))]	
-			elif self.sender() == self.pushButton6:
-				if worQt_time_lib.getTime_MorningWork(self) is None: return None
-				subject = ["Переработка",today]
-				message = ["<br>{0}</br>".format(today),
-							"<br>Пришел на работу в : {0}</br>".format(dt.datetime.now().strftime("%H:%M:%S")),
-							"<br>Пришел раньше на : {0}</br>".format(worQt_time_lib.extractTimeFormat(self,self.timeDeltaBefore)),
-							"<br>Полных часов: {0} ч</br>".format(math.floor(self.timeDeltaBefore.seconds / 3600)),
-							"<br><b>{0}<b></br>".format(self.workForFree)]
-			elif self.sender() == self.pushButton4:
-				self.time_start_of_extra = dt.datetime.now()
-				subject = ["Переработка",today] 
-				message = ["<br>{0}</br>".format(today),
-							"<br>Пришел на работу в : {0}</br>".format(dt.datetime.now().strftime("%H:%M:%S"))]			
-			else:
-				if self.getTime_ExtraWork() is None: return None
-				subject = ["Переработка",today] 
-				text = (self.textEdit.toPlainText()).split("\n")
-				activity = ["<br>{0}</br>".format(row) for row in text]
-				message = ["<br>{0}</br>".format(today),
-							"<br>Ушел в : {0}</br>".format(self.time_finish_of_extra.strftime("%H:%M:%S")),
-							"<br>Переработано: {0}</br>".format(worQt_time_lib.extractTimeFormat(self,self.timeDelta)),
-							"<br>Полных часов: {0} ч</br>".format(math.floor(self.timeDelta.seconds / 3600)),
-							"{0}".format("".join(activity)),
-							"<br><b>{0}<b></br>".format(self.workForFree)]
-				if self.is_weekend: message.insert(1,"<br>Пришел в: {0}</br>".format(self.time_start_of_extra.strftime("%H:%M:%S")))
-			worQt_cache_lib.writeLog(self,"session_log",[self.time_start_of_extra,self.time_finish_of_extra,None,None,None])
-			message = "".join(message)
-			outlook = win32.Dispatch("outlook.application")
-			# if win32ui.FindWindow(None, "Microsoft Outlook"): pass
-			# else: os.startfile("outlook")
-			namespace = outlook.GetNameSpace("MAPI")
-			user = str(namespace.CurrentUser)
-			mail = outlook.CreateItem(0)
-			mail.To = ""
-			mail.CC = ""
-			for i in range(self.widget_list.count()):
-				attachment = self.widget_list.item(i).text()
-				mail.Attachments.Add(attachment)
-			subject.insert(1,user)
-			mail.Subject = " - ".join(subject)
-			mail.GetInspector 
-			index = mail.HTMLbody.find(">", mail.HTMLbody.find("<body")) 
-			mail.HTMLbody = mail.HTMLbody[:index + 1] + message + mail.HTMLbody[index + 1:] 
-			mail.Display(True)
-			try: self.getSessionStart()
-			except: pass
-			#mail.send #uncomment if you want to send instead of displaying
-			#else: sys.exit(app.exec_())
-		except Exception as ex:
-			worQt_cache_lib.log_dump_crash()
-
+	
 	#caching section		
 	def fillview(self):#csv or json
-		try:
-			self.tableWidget.setColumnCount(0)
-			self.tableWidget.setRowCount(0)
-			connection = sqlite3.connect(self.logFile)
-			cursor = connection.cursor()
-			cursor.execute('''SELECT date_ as "Дата", 
-							session_start as "Начало смены",
-							session_end as "Конец смены",
-							duration as "Всего отработано",
-							duration_full as "Полных часов",
-							index_ as "Коэффициент"
-							FROM session_log''')
-			names = list(map(lambda x: x[0], cursor.description))
-			[self.tableWidget.insertColumn(i) for i in range(len(names))]
-			for row, form in enumerate(cursor):
-				self.tableWidget.insertRow(row)
-				for column, item in enumerate(form):
-					# self.tableWidget.insertColumn(column)
-					self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
-			self.tableWidget.setHorizontalHeaderLabels(names)
-			connection.close()
-		except Exception as ex:
-			connection.close()
-			worQt_cache_lib.log_dump_crash()
-	
+		pass
+		# try:
+		# 	self.tableWidget.setColumnCount(0)
+		# 	self.tableWidget.setRowCount(0)
+		# 	connection = sqlite3.connect(self.file_log)
+		# 	cursor = connection.cursor()
+		# 	cursor.execute('''SELECT date_ as "Дата", 
+		# 					session_start as "Начало смены",
+		# 					session_end as "Конец смены",
+		# 					duration as "Всего отработано",
+		# 					duration_full as "Полных часов",
+		# 					index_ as "Коэффициент"
+		# 					FROM session_log''')
+		# 	names = list(map(lambda x: x[0], cursor.description))
+		# 	[self.tableWidget.insertColumn(i) for i in range(len(names))]
+		# 	for row, form in enumerate(cursor):
+		# 		self.tableWidget.insertRow(row)
+		# 		for column, item in enumerate(form):
+		# 			# self.tableWidget.insertColumn(column)
+		# 			self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
+		# 	self.tableWidget.setHorizontalHeaderLabels(names)
+		# 	connection.close()
+		# except Exception as ex:
+		# 	connection.close()
+		# 	worQt_cache_lib.log_dump_crash()
+
 	def table_export(self):
 		destination = QtWidgets.QFileDialog.getExistingDirectoryUrl()
 		try:
-			file_log = self.
+			file_log = self.file_log
 			fileOutput = sys.argv[2]
 			inputFile = open(fileInput) #open json file
 			outputFile = open(fileOutput, 'w') #load csv file
