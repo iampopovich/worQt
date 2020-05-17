@@ -4,6 +4,7 @@ import urllib
 import requests
 import urllib.request
 import datetime as dt
+import time as tt
 
 def get_work_time_start():
 	pass
@@ -24,7 +25,7 @@ def check_is_time_after_work_end(instant):
 	end = instant.time_end_of_day
 	return dt.datetime.now() > end
 	
-def check_is_weekend(day):
+def check_is_weekend(day = dt.datetime.today()):
 	try:
 		today = day.strftime("%Y%m%d")
 		response = urllib.request.urlopen(
@@ -38,27 +39,27 @@ def check_is_weekend(day):
 
 def get_time_morning_work(self):
 	self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
-	if not(self.is_weekend) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
+	if not(check_is_weekend()) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
 		return "Отработка меньше 1 часа в будний день"
 
-def get_time_extra_work(self):
-	_today = self.today.strftime("%d.%m.%Y")
-	if self.is_weekend:
-		self.timeStartOfExtra = dt.datetime.strptime("{0} {1}".format(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
+def get_time_extra_work(day):
+	today = self.today.strftime("%d.%m.%Y")
+	if check_is_weekend():
+		self.time_start_extra = dt.datetime.strptime("{0} {1}".format(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
 	elif self.weekday in [4]:
-		self.timeStartOfExtra = self.convert_time("16:30:00")
+		self.time_start_extra = self.convert_time("16:30:00")
 	else:
-		self.timeStartOfExtra = self.timeEndOfDay
+		self.time_start_extra = self.timeEndOfDay
 	self.timeFinishOfExtra = dt.datetime.now()
-	self.timeDelta = self.timeFinishOfExtra - self.timeStartOfExtra
+	self.timeDelta = self.timeFinishOfExtra - self.time_start_extra
 	if self.timeDelta < dt.timedelta(seconds = 1):
 		self.informationLabel.setText("Рабочий день еще продолжается")
 		return None
 	if self.timeDelta > dt.timedelta(seconds = 1): 
-		if self.is_weekend and self.timeDelta < dt.timedelta(hours = 4):
+		if check_is_weekend() and self.timeDelta < dt.timedelta(hours = 4):
 			self.workForFree = "Отработка меньше 4 часов в выходной"			
 			return True
-		if not(self.is_weekend) and self.timeDelta < dt.timedelta(hours = 1): 
+		if not(check_is_weekend()) and self.timeDelta < dt.timedelta(hours = 1): 
 			self.workForFree = "Отработка меньше 1 часа в будний день"	
 			return True
 		return True
@@ -70,7 +71,10 @@ def get_time_after_work_started(self):
 	else: 
 		self.timeDeltaLate = dt.datetime.now() - self.timeStartOfDay
 		return True
-			
+
+def get_time_delta():
+	pass
+
 def extract_time_format(self, tdelta):
 	try:
 		d = {}
