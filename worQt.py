@@ -32,17 +32,16 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.config = worQt_config.get_config()
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = worQt_time_lib.get_today()
-		self.weekday = self.today.weekday()
-		self.is_weekend = worQt_time_lib.check_is_weekend(self)
+		self.is_weekend = worQt_time_lib.check_is_weekend(self.today)
 		# self.time_start_of_day = self.config['work_start'] #worQt_time_lib.convert_time(self,"08:30:00") #refactor config
 		# self.time_end_of_day = solf.config['worl_end'] #worQt_time_lib.convert_time(self,"17:45:00") #refactor config
-		# self.is_late = worQt_time_lib.is_late(self)
-		# self.is_before_start = worQt_time_lib.is_time_before_work_start(self)
-		self.time_start_of_extra = None
-		self.time_finish_of_extra = None
-		self.time_delta = None
-		self.time_delta_late = None
-		self.time_delta_before = None
+		self.is_late = False #worQt_time_lib.check_is_late(self)
+		self.is_before_start = False #worQt_time_lib.check_is_time_before_work_start(self)
+		# self.time_start_of_extra = None
+		# self.time_finish_of_extra = None
+		# self.time_delta = None
+		# self.time_delta_late = None
+		# self.time_delta_before = None
 		self.work_for_free = ""
 		self.shutdown_time = 2700000
 		self.file_log = worQt_cache_lib.get_file_log(self)
@@ -138,7 +137,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton5.setObjectName("pushButton5")
 		self.pushButton5.setText("Пришел позже 8:30")
 		self.pushButton5.setEnabled(not self.is_weekend if self.is_weekend else self.is_late)
-		self.pushButton5.clicked.connect(worQt_mail_worker.message_send)
+		self.pushButton5.clicked.connect(worQt_mail_worker.message_send_late_for_work)
 		self.gridLayout1.addWidget(self.pushButton5, 4, 0, 1, 1)
 		# 
 		self.pushButton6 = QtWidgets.QPushButton(self.gridLayoutWidget1)

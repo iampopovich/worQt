@@ -15,35 +15,35 @@ def is_time_before_work_start():
 	start = instant.time_start_of_day
 	return  dt.datetime.now() < start
 
-def is_late(instant):
+def check_is_late(instant):
 	start = instant.time_start_of_day
 	end = instant.time_end_of_day
 	return start < dt.datetime.now() < end
 
-def is_time_after_work_end(instant):
+def check_is_time_after_work_end(instant):
 	end = instant.time_end_of_day
 	return dt.datetime.now() > end
 	
-def check_is_weekend(self):
+def check_is_weekend(day):
 	try:
-		_today = self.today.strftime("%Y%m%d")
-		scontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-		chemeo_search_url = "https://isdayoff.ru/{0}".format(_today)
-		response = urllib.request.urlopen(chemeo_search_url,
-			context = scontext,
+		today = day.strftime("%Y%m%d")
+		response = urllib.request.urlopen(
+			"https://isdayoff.ru/{0}".format(today),
+			context = ssl.SSLContext(ssl.PROTOCOL_SSLv23),
 			timeout = 5)
 		response = int(response.read().decode("utf-8"))
 		return True if response in [1] else False
-	except:	return True if self.weekday in [5,6] else False
+	except:
+		return True if day.weekday() in [5,6] else False
 
 def get_time_morning_work(self):
 	self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
-	if not(self.isWeekend) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
+	if not(self.is_weekend) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
 		return "Отработка меньше 1 часа в будний день"
 
 def get_time_extra_work(self):
 	_today = self.today.strftime("%d.%m.%Y")
-	if self.isWeekend:
+	if self.is_weekend:
 		self.timeStartOfExtra = dt.datetime.strptime("{0} {1}".format(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
 	elif self.weekday in [4]:
 		self.timeStartOfExtra = self.convert_time("16:30:00")
@@ -55,10 +55,10 @@ def get_time_extra_work(self):
 		self.informationLabel.setText("Рабочий день еще продолжается")
 		return None
 	if self.timeDelta > dt.timedelta(seconds = 1): 
-		if self.isWeekend and self.timeDelta < dt.timedelta(hours = 4):
+		if self.is_weekend and self.timeDelta < dt.timedelta(hours = 4):
 			self.workForFree = "Отработка меньше 4 часов в выходной"			
 			return True
-		if not(self.isWeekend) and self.timeDelta < dt.timedelta(hours = 1): 
+		if not(self.is_weekend) and self.timeDelta < dt.timedelta(hours = 1): 
 			self.workForFree = "Отработка меньше 1 часа в будний день"	
 			return True
 		return True
