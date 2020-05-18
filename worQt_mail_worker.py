@@ -35,7 +35,7 @@ def message_send_extrawork_morning(day):
 				"<br><b>{}<b></br>".format(self.workForFree)]
 	message_send(message)
 
-def send_message_extrwork_checkin(day):
+def message_send_extrwork_checkin(day):
 	today = day.strftime("%d.%m.%Y")
 	time_start = day.strftime("%H:%M:%S")
 	subject = ["Переработка",today] 
@@ -43,7 +43,7 @@ def send_message_extrwork_checkin(day):
 				"<br>Пришел на работу в : {}</br>".format(time_start)]			
 	message_send(message)
 
-def send_message_extrawork_regular(day):
+def message_send_extrawork_regular(day):
 	today = day.strftime("%d.%m.%Y")
 	time_start = '' #get from config by day 
 	time_finish = self.time_finish_of_extra.strftime("%H:%M:%S")

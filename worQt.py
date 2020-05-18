@@ -50,6 +50,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 
 	def setupUi(self, Dialog):
 		Dialog.setObjectName("Dialog")
+		Dialog.setWindowTitle("WorQt {0}".format(self.version))
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
 		Dialog.setFixedSize(355, 390)
 		font = QtGui.QFont()
@@ -60,7 +61,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		#tab1
 		self.tab = QtWidgets.QWidget()
 		self.tab.setObjectName("tab")
-		self.tabWidget.addTab(self.tab, "Редактор")
+		self.tabWidget.addTab(self.tab, "Editor")
 		#
 		self.gridLayoutWidget1 = QtWidgets.QWidget(self.tab)
 		self.gridLayoutWidget1.setGeometry(QtCore.QRect(0, 0, 350, 360))
@@ -72,6 +73,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		# 
 		self.label = QtWidgets.QLabel(self.gridLayoutWidget1)
 		self.label.setObjectName("label")
+		self.label.setText("Day starts at: ")
 		self.gridLayout1.addWidget(self.label, 3, 0, 1, 1)
 		# 
 		self.timeEdit = QtWidgets.QTimeEdit(self.gridLayoutWidget1)
@@ -80,6 +82,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.timeEdit.setTime(QtCore.QTime(0, 0, 0))
 		self.timeEdit.setObjectName("timeEdit")
 		self.timeEdit.setEnabled(self.is_weekend)
+		self.timeEdit.setDisplayFormat("HH:mm:ss")
 		self.gridLayout1.addWidget(self.timeEdit, 3, 1, 1, 1)
 		# 
 		self.textEdit = QtWidgets.QTextEdit(self.gridLayoutWidget1)
@@ -99,8 +102,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton = QtWidgets.QPushButton(self.gridLayoutWidget1)
 		self.pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton.setObjectName("pushButton")
-		self.pushButton.setText("Отправить письмо")
-		self.pushButton.clicked.connect(worQt_mail_worker.message_send)
+		self.pushButton.setText("Send")
+		self.pushButton.clicked.connect(worQt_mail_worker.message_send_extrawork_regular)
 		self.gridLayout1.addWidget(self.pushButton, 4, 2, 1, 1)
 		# 
 		self.pushButton1 = QtWidgets.QPushButton(self.gridLayoutWidget1)
@@ -120,31 +123,31 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton3 = QtWidgets.QPushButton(self.gridLayoutWidget1)
 		self.pushButton3.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton3.setObjectName("pushButton3")
-		self.pushButton3.setText("Очистить")
+		self.pushButton3.setText("Clear all")
 		self.pushButton3.clicked.connect(self.attachment_clear)
 		self.gridLayout1.addWidget(self.pushButton3,8,2,1,1)
 		# 
 		self.pushButton4 = QtWidgets.QPushButton(self.gridLayoutWidget1)
 		self.pushButton4.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton4.setObjectName("pushButton4")
-		self.pushButton4.setText("Отметиться")
+		self.pushButton4.setText("Check in")
 		self.pushButton4.setEnabled(self.is_weekend)
-		self.pushButton4.clicked.connect(worQt_mail_worker.message_send)
+		self.pushButton4.clicked.connect(worQt_mail_worker.message_send_extrwork_checkin)
 		self.gridLayout1.addWidget(self.pushButton4, 3, 2, 1, 1)
 		# 
 		self.pushButton5 = QtWidgets.QPushButton(self.gridLayoutWidget1)
 		self.pushButton5.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton5.setObjectName("pushButton5")
-		self.pushButton5.setText("Пришел позже 8:30")
-		self.pushButton5.setEnabled(not self.is_weekend if self.is_weekend else self.is_late)
+		self.pushButton5.setText("I'm late")
+		self.pushButton5.setEnabled(False)
 		self.pushButton5.clicked.connect(worQt_mail_worker.message_send_late_for_work)
 		self.gridLayout1.addWidget(self.pushButton5, 4, 0, 1, 1)
 		# 
 		self.pushButton6 = QtWidgets.QPushButton(self.gridLayoutWidget1)
 		self.pushButton6.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton6.setObjectName("pushButton6")
-		self.pushButton6.setText("Пришел раньше 8:30")
-		self.pushButton6.setEnabled(not self.is_weekend if self.is_weekend else self.is_before_start)
+		self.pushButton6.setText("Came early")
+		self.pushButton6.setEnabled(True)
 		self.pushButton6.clicked.connect(worQt_mail_worker.message_send)
 		self.gridLayout1.addWidget(self.pushButton6, 4, 1, 1, 1)
 		#
@@ -181,7 +184,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 		self.gridLayout2.addWidget(self.tableWidget, 1,0,1,8)
 		#
-		self.retranslateUi(Dialog)
+		# self.retranslateUi(Dialog)
 		# if self.is_weekend: 
 		# 	response = self.getSessionStart() 
 		# 	if not(response):
@@ -201,19 +204,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self._shutdown_timer.setSingleShot(True)
 		self._shutdown_timer.timeout.connect(sys.exit)
 		self._shutdown_timer.start(self.shutdown_time)
-
-	def retranslateUi(self, Dialog):
-		_translate = QtCore.QCoreApplication.translate
-		Dialog.setWindowTitle(_translate("Dialog", "WorQt {0}".format(self.version)))
-		self.timeEdit.setDisplayFormat(_translate("Dialog", "HH:mm:ss"))
-		self.pushButton.setText(_translate("Dialog", "Отправить"))
-		self.pushButton1.setText(_translate("Dialog", "+"))
-		self.pushButton2.setText(_translate("Dialog", "-"))
-		self.pushButton3.setText(_translate("Dialog", "Очистить"))
-		self.pushButton4.setText(_translate("Dialog", "Отметиться"))
-		self.pushButton5.setText(_translate("Dialog", "Пришел позже 8:30"))
-		self.pushButton6.setText(_translate("Dialog", "Пришел раньше 8:30"))
-		self.label.setText(_translate("Dialog", "Начало рабочего дня"))
 
 	#attachment section
 	def attachment_add(self, parent):
@@ -239,11 +229,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		try: self.widget_list.clear()
 		except Exception as ex:
 			worQt_cache_lib.log_dump_crash()
-
-	#base function section
-	#refactor with messages' templates
-	
-	#caching section		
+		
 	def fillview(self):#csv or json
 		pass
 		# try:
