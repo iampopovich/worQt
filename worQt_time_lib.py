@@ -12,17 +12,17 @@ def get_work_time_start():
 def get_today():
 	return dt.datetime.today()
 
-def is_time_before_work_start():
-	start = instant.time_start_of_day
+def is_time_before_work_start(instance):
+	start = instance.time_start_of_day
 	return  dt.datetime.now() < start
 
-def check_is_late(instant):
-	start = instant.time_start_of_day
-	end = instant.time_end_of_day
+def check_is_late(instance):
+	start = instance.time_start_of_day
+	end = instance.time_end_of_day
 	return start < dt.datetime.now() < end
 
-def check_is_time_after_work_end(instant):
-	end = instant.time_end_of_day
+def check_is_time_after_work_end(instance):
+	end = instance.time_end_of_day
 	return dt.datetime.now() > end
 	
 def check_is_weekend(day = dt.datetime.today()):
