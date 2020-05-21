@@ -28,14 +28,12 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v3.0.2"
+		self.version = "v3.1.0"
 		self.config = worQt_config.get_config()
 		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = worQt_timer.get_today()
 		self.is_weekend = worQt_timer.check_is_weekend(self.today)
 		self.config = worQt_config.get_config()
-		# self.time_start_of_day = self.config['workday_start']
-		# self.time_end_of_day = self.config['workday_end']
 		self.shutdown_time = 2700000
 		self.file_log = worQt_logger.get_file_log()
 		self.init_shutdown_timer()
@@ -44,6 +42,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def setupUi(self, Dialog):
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowTitle("WorQt {0}".format(self.version))
+		Dialog.setWindowFlag(QtCore.Qt.WindowCloseButtonHint)
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
 		Dialog.setFixedSize(355, 390)
 		font = QtGui.QFont()
@@ -66,7 +65,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		# 
 		self.label = QtWidgets.QLabel(self.gridLayoutWidget1)
 		self.label.setObjectName("label")
-		self.label.setText("Day starts at: ")
+		self.label.setText("Weekend started at: ")
 		self.gridLayout1.addWidget(self.label, 3, 0, 1, 1)
 		# 
 		self.timeEdit = QtWidgets.QTimeEdit(self.gridLayoutWidget1)
@@ -96,20 +95,20 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton.setObjectName("pushButton")
 		self.pushButton.setText("Send")
-		self.pushButton.clicked.connect(worQt_postman.message_send_extrawork_regular)
-		self.gridLayout1.addWidget(self.pushButton, 4, 2, 1, 1)
+		self.pushButton.clicked.connect(self.message_send_bind)
+		self.gridLayout1.addWidget(self.pushButton, 4, 0, 1, 3)
 		# 
 		self.pushButton1 = QtWidgets.QPushButton(self.gridLayoutWidget1)
 		self.pushButton1.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton1.setObjectName("pushButton1")
-		self.pushButton1.setText("+")
+		self.pushButton1.setText("Add")
 		self.pushButton1.clicked.connect(self.attachment_add)
 		self.gridLayout1.addWidget(self.pushButton1,6,2,1,1)
 		# 
 		self.pushButton2 = QtWidgets.QPushButton(self.gridLayoutWidget1)
 		self.pushButton2.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton2.setObjectName("pushButton2")
-		self.pushButton2.setText("-")
+		self.pushButton2.setText("Remove")
 		self.pushButton2.clicked.connect(self.attachment_remove)
 		self.gridLayout1.addWidget(self.pushButton2,7,2,1,1)
 		# 
@@ -127,22 +126,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton4.setEnabled(self.is_weekend)
 		self.pushButton4.clicked.connect(worQt_postman.message_send_extrwork_checkin)
 		self.gridLayout1.addWidget(self.pushButton4, 3, 2, 1, 1)
-		# 
-		self.pushButton5 = QtWidgets.QPushButton(self.gridLayoutWidget1)
-		self.pushButton5.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-		self.pushButton5.setObjectName("pushButton5")
-		self.pushButton5.setText("I'm late")
-		self.pushButton5.setEnabled(False)
-		self.pushButton5.clicked.connect(worQt_postman.message_send_late_for_work)
-		self.gridLayout1.addWidget(self.pushButton5, 4, 0, 1, 1)
-		# 
-		self.pushButton6 = QtWidgets.QPushButton(self.gridLayoutWidget1)
-		self.pushButton6.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-		self.pushButton6.setObjectName("pushButton6")
-		self.pushButton6.setText("Came early")
-		self.pushButton6.setEnabled(True)
-		self.pushButton6.clicked.connect(worQt_postman.message_send)
-		self.gridLayout1.addWidget(self.pushButton6, 4, 1, 1, 1)
 		#
 		#tab2
 		self.tab_2 = QtWidgets.QWidget()
@@ -177,18 +160,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 		self.gridLayout2.addWidget(self.tableWidget, 1,0,1,8)
 		#
-		# self.retranslateUi(Dialog)
-		# if self.is_weekend: 
-		# 	response = self.getSessionStart() 
-		# 	if not(response):
-		# 		self.timeEdit.setEnabled(True)
-		# 		self.pushButton4.setEnabled(True)
-		# 		self.informationLabel.setText("Не могу определить начало дня. Введите время вручную")
-		# 	else: 
-		# 		self.timeEdit.setTime(QtCore.QTime(response.hour,response.minute,response.second))
-		# 		self.timeEdit.setEnabled(False)
-		# 		self.pushButton4.setEnabled(False)
-
 		# self.fillview()
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
@@ -222,7 +193,15 @@ class Ui_Dialog(QtWidgets.QDialog):
 		try: self.widget_list.clear()
 		except Exception as ex:
 			worQt_logger.log_dump_crash()
-		
+	
+	def message_send_bind(self):
+		td = worQt_postman.message_send_extrawork(self.today)
+		self.textEdit.setText(str(td))
+
+
+	def check_in_bind(self):
+		pass 
+
 	def fillview(self):#csv or json
 		pass
 		# try:
@@ -263,7 +242,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 			output.writerow(data[0].keys())  # header row
 			for row in data:
 				output.writerow(row.values()) #values row
-		except: raise
+		except: pass #unstable sorry 
 		pass
 
 def main():

@@ -43,26 +43,28 @@ def message_send_extrwork_checkin(day):
 				"<br>Пришел на работу в : {}</br>".format(time_start)]			
 	message_send(message)
 
-def message_send_extrawork_regular(day):
-	today = day.strftime("%d.%m.%Y")
-	time_start = '' #get from config by day 
-	time_finish = self.time_finish_of_extra.strftime("%H:%M:%S")
-	time_delta = worQt_timer.get_time_extra_work()
-	time_WTF = worQt_timer.extract_time_format(self,self.timeDelta)
-	time_full_hours = math.floor(self.timeDelta.seconds / 3600)
-	subject = ["Переработка",today] 
-	text = (self.textEdit.toPlainText()).split("\n")
-	activity = ["<br>{}</br>".format(row) for row in text]
-	message = ["<br>{}</br>".format(today),
-				"<br>Ушел в : {}</br>".format(time_finish_of_extra),
-				"<br>Переработано: {}</br>".format(time_WTF),
-				"<br>Полных часов: {} ч</br>".format(),
-				"{}".format("".join(activity)),
-				"<br><b>{}<b></br>".format(self.workForFree)]
-	if self.is_weekend:
-		time_weekend = self.time_start_of_extra.strftime("%H:%M:%S")
-		message.insert(1,"<br>Пришел в: {}</br>".format(time_weekend))
-	message_send(message)
+def message_send_extrawork(day):
+	dk = worQt_timer.get_time_extra_work(day)
+	return dk
+	# today = worQt_timer.get_today().strftime("%d.%m.%Y")
+	# time_start = config['workday_start']
+	# time_finish = worQt_timer.get_now().strftime("%H:%M:%S")
+	# time_delta = worQt_timer.get_time_extra_work()
+	# # time_WTF = worQt_timer.extract_time_format(self,self.timeDelta)
+	# time_full_hours = math.floor(self.timeDelta.seconds / 3600)
+	# subject = ["Переработка",today] 
+	# text = (self.textEdit.toPlainText()).split("\n")
+	# activity = ["<br>{}</br>".format(row) for row in text]
+	# message = ["<br>{}</br>".format(today),
+	# 			"<br>Ушел в : {}</br>".format(time_finish_of_extra),
+	# 			# "<br>Переработано: {}</br>".format(time_WTF),
+	# 			"<br>Полных часов: {} ч</br>".format(),
+	# 			"{}".format("".join(activity)),
+	# 			"<br><b>{}<b></br>".format(self.workForFree)]
+	# if self.is_weekend:
+	# 	time_weekend = self.time_start_of_extra.strftime("%H:%M:%S")
+	# 	message.insert(1,"<br>Пришел в: {}</br>".format(time_weekend))
+	# message_send(message)
 
 def message_send(message):
 		try:

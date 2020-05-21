@@ -12,18 +12,27 @@ def get_work_time_start():
 def get_today():
 	return dt.datetime.today()
 
-def is_time_before_work_start(instance):
-	start = instance.time_start_of_day
-	return  dt.datetime.now() < start
+def get_now():
+	return dt.datetime.now()
 
-def check_is_late(instance):
-	start = instance.time_start_of_day
-	end = instance.time_end_of_day
+def get_delta(time_start, time_finish):
+	return time_finish - time_start
+
+def check_is_extrawork(time_start, time_end):
+	if check_is_weekend: return True
+	return not(time_start < dt.datetime.now().strftime("%H:%M:%S") < time_end)
+
+def get_time_extra_work(time_start):
+	time_finish = dt.datetime.now()
+	time_delta = get_delta(time_start, time_finish)
+	if time_delta > dt.timedelta(seconds = 1):
+		return time_delta
+
+def check_is_late(time_start, time_end):
 	return start < dt.datetime.now() < end
 
-def check_is_time_after_work_end(instance):
-	end = instance.time_end_of_day
-	return dt.datetime.now() > end
+# def time_convert(today, time_string, FMT):
+# 	return dt.datetime.strptime("{0} {1}".format(today, time_string), FMT)
 	
 def check_is_weekend(day = dt.datetime.today()):
 	try:
@@ -33,47 +42,9 @@ def check_is_weekend(day = dt.datetime.today()):
 			context = ssl.SSLContext(ssl.PROTOCOL_SSLv23),
 			timeout = 5)
 		response = int(response.read().decode("utf-8"))
-		return True if response in [1] else False
+		return response in [1]
 	except:
-		return True if day.weekday() in [5,6] else False
-
-def get_time_morning_work(day): #deprecated with one super method
-	delta = day - dt.datetime.now()
-	if not(check_is_weekend()) and delta < dt.timedelta(hours = 1): 
-		return None #отработал меньше часа в будний 
-
-def get_time_extra_work(day):
-	today = self.today.strftime("%d.%m.%Y")
-	if check_is_weekend():
-		self.time_start_extra = dt.datetime.strptime("{0} {1}".format(today,self.timeEdit.text()), "%d.%m.%Y %H:%M:%S")
-	elif self.weekday in [4]:
-		self.time_start_extra = self.convert_time("16:30:00")
-	else:
-		self.time_start_extra = self.timeEndOfDay
-	self.timeFinishOfExtra = dt.datetime.now()
-	self.timeDelta = self.timeFinishOfExtra - self.time_start_extra
-	if self.timeDelta < dt.timedelta(seconds = 1):
-		self.informationLabel.setText("Рабочий день еще продолжается")
-		return None
-	if self.timeDelta > dt.timedelta(seconds = 1): 
-		if check_is_weekend() and self.timeDelta < dt.timedelta(hours = 4):
-			self.workForFree = "Отработка меньше 4 часов в выходной"			
-			return True
-		if not(check_is_weekend()) and self.timeDelta < dt.timedelta(hours = 1): 
-			self.workForFree = "Отработка меньше 1 часа в будний день"	
-			return True
-		return True
-
-def get_time_after_work_started(self):
-	if dt.datetime.now() > self.timeEndOfDay:
-		self.informationLabel.setText("Уже слишком поздно")
-		return None
-	else: 
-		self.timeDeltaLate = dt.datetime.now() - self.timeStartOfDay
-		return True
-
-def get_time_delta():
-	pass
+		return day.weekday() in [5,6]
 
 def extract_time_format(self, tdelta):
 	try:
@@ -84,9 +55,4 @@ def extract_time_format(self, tdelta):
 		for key,val in d.items():
 			if d[key] < 10 : d[key] = "0{0}".format(val)
 		return ("{0}:{1}:{2}".format(d["hrs"],d["min"],d["sec"]))
-	except Exception as ex:
-		self.writeLog("crash_log",[dt.datetime.now(),"extract_time_format failed with {0}".format(ex)])
-
-def convert_time(self, stringTime):
-	out = dt.datetime.strptime("{0} {1}".format(self.today.date(),stringTime), self.FMT)
-	return out
+	except Exception as ex: raise

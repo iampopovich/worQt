@@ -22,7 +22,7 @@ def set_file_log(self):
 		file = create_file_log()
 		self.file_error = file
 
-def create_file_log(self):
+def create_file_log():
 	date = datetime.now().isoformat()
 	login = os.login()
 	file_log = '{}_{}.log'.format(date,login)
@@ -30,7 +30,7 @@ def create_file_log(self):
 		out_log.close()
 	return file_log
 
-def create_file_error(self):
+def create_file_error():
 	date = datetime.now().isoformat()
 	login = os.login()
 	file_error = '{}_{}_error.log'.format(date, login)
