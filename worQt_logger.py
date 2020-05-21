@@ -38,23 +38,14 @@ def create_file_error(self):
 		out_error.close()
 	return file_error
 
-def get_file_log(self):
+def get_file_log():
 	pass
 
-def get_file_error(self):
+def get_file_error():
 	pass
 
-def create_file_config(self):
+def log_dump_crash():
 	pass
 
-def set_file_config(self, config):
-	pass
-
-def get_file_config(self):
-	pass
-
-def log_dump_crash(self):
-	pass
-
-def log_write_action(self):
+def log_write_action():
 	pass

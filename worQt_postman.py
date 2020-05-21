@@ -1,5 +1,5 @@
 import smtplib
-import worQt_time_lib
+import worQt_timer
 from email.mime.text import MIMEText
 
 def templates_load():
@@ -11,9 +11,9 @@ def templates_set():
 def message_send_late_for_work(day):
 	today = day.strftime("%d.%m.%Y")
 	time_start = day.strftime("%H:%M:%S")
-	time_delta = worQt_time_lib.get_time_delta(start,finish)
+	time_delta = worQt_timer.get_time_delta(start,finish)
 	time_full_hours = math.ceil(self.timeDeltaLate.seconds / 3600)
-	if worQt_time_lib.getTime_AfterWorkStarted(self) is None: return None
+	if worQt_timer.getTime_AfterWorkStarted(self) is None: return None
 	subject = ["Выход на работу",today]
 	message = ["<br>{}</br>".format(today),
 				"<br>Пришел на работу в : {}</br>".format(time_start),
@@ -24,16 +24,16 @@ def message_send_late_for_work(day):
 def message_send_extrawork_morning(day):
 	today = day.strftime("%d.%m.%Y")
 	time_start = day.strftime("%H:%M:%S") #чекать начало сессии в день до работы
-	time_delta = worQt_time_lib.get_time_delta(start,finish)
+	time_delta = worQt_timer.get_time_delta(start,finish)
 	time_full_hours = math.floor(self.timeDeltaBefore.seconds / 3600)
-	if worQt_time_lib.getTime_MorningWork(self) is None: return None
-	subject = ["Переработка",today]
-	message = ["<br>{}</br>".format(today),
-				"<br>Пришел на работу в : {}</br>".format(time_start),
-				"<br>Пришел раньше на : {}</br>".format(time_delta),
-				"<br>Полных часов: {} ч</br>".format(time_full_hours),
-				"<br><b>{}<b></br>".format(self.workForFree)]
-	message_send(message)
+	if worQt_timer.get_time_morning_work(day):
+		subject = ["Переработка",today]
+		message = ["<br>{}</br>".format(today),
+					"<br>Пришел на работу в : {}</br>".format(time_start),
+					"<br>Пришел раньше на : {}</br>".format(time_delta),
+					"<br>Полных часов: {} ч</br>".format(time_full_hours),
+					"<br><b>{}<b></br>".format(self.workForFree)]
+		message_send(message)
 
 def message_send_extrwork_checkin(day):
 	today = day.strftime("%d.%m.%Y")
@@ -47,8 +47,8 @@ def message_send_extrawork_regular(day):
 	today = day.strftime("%d.%m.%Y")
 	time_start = '' #get from config by day 
 	time_finish = self.time_finish_of_extra.strftime("%H:%M:%S")
-	time_delta = worQt_time_lib.get_time_extra_work()
-	time_WTF = worQt_time_lib.extract_time_format(self,self.timeDelta)
+	time_delta = worQt_timer.get_time_extra_work()
+	time_WTF = worQt_timer.extract_time_format(self,self.timeDelta)
 	time_full_hours = math.floor(self.timeDelta.seconds / 3600)
 	subject = ["Переработка",today] 
 	text = (self.textEdit.toPlainText()).split("\n")

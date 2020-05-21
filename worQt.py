@@ -3,9 +3,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import csv
 import os
-import worQt_time_lib
-import worQt_cache_lib
-import worQt_mail_worker
+import worQt_timer
+import worQt_logger
+import worQt_postman
 import worQt_config
 
 class DragAndDropList(QtWidgets.QListWidget):
@@ -28,23 +28,16 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v3.0.1"
+		self.version = "v3.0.2"
 		self.config = worQt_config.get_config()
 		self.FMT = "%Y-%m-%d %H:%M:%S"
-		self.today = worQt_time_lib.get_today()
-		self.is_weekend = worQt_time_lib.check_is_weekend(self.today)
-		# self.time_start_of_day = self.config['work_start'] #worQt_time_lib.convert_time(self,"08:30:00") #refactor config
-		# self.time_end_of_day = solf.config['worl_end'] #worQt_time_lib.convert_time(self,"17:45:00") #refactor config
-		self.is_late = False #worQt_time_lib.check_is_late(self)
-		self.is_before_start = False #worQt_time_lib.check_is_time_before_work_start(self)
-		# self.time_start_of_extra = None
-		# self.time_finish_of_extra = None
-		# self.time_delta = None
-		# self.time_delta_late = None
-		# self.time_delta_before = None
-		self.work_for_free = ""
+		self.today = worQt_timer.get_today()
+		self.is_weekend = worQt_timer.check_is_weekend(self.today)
+		self.config = worQt_config.get_config()
+		# self.time_start_of_day = self.config['workday_start']
+		# self.time_end_of_day = self.config['workday_end']
 		self.shutdown_time = 2700000
-		self.file_log = worQt_cache_lib.get_file_log(self)
+		self.file_log = worQt_logger.get_file_log()
 		self.init_shutdown_timer()
 		self.workfolder = os.getcwd()
 
@@ -103,7 +96,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton.setObjectName("pushButton")
 		self.pushButton.setText("Send")
-		self.pushButton.clicked.connect(worQt_mail_worker.message_send_extrawork_regular)
+		self.pushButton.clicked.connect(worQt_postman.message_send_extrawork_regular)
 		self.gridLayout1.addWidget(self.pushButton, 4, 2, 1, 1)
 		# 
 		self.pushButton1 = QtWidgets.QPushButton(self.gridLayoutWidget1)
@@ -132,7 +125,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton4.setObjectName("pushButton4")
 		self.pushButton4.setText("Check in")
 		self.pushButton4.setEnabled(self.is_weekend)
-		self.pushButton4.clicked.connect(worQt_mail_worker.message_send_extrwork_checkin)
+		self.pushButton4.clicked.connect(worQt_postman.message_send_extrwork_checkin)
 		self.gridLayout1.addWidget(self.pushButton4, 3, 2, 1, 1)
 		# 
 		self.pushButton5 = QtWidgets.QPushButton(self.gridLayoutWidget1)
@@ -140,7 +133,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton5.setObjectName("pushButton5")
 		self.pushButton5.setText("I'm late")
 		self.pushButton5.setEnabled(False)
-		self.pushButton5.clicked.connect(worQt_mail_worker.message_send_late_for_work)
+		self.pushButton5.clicked.connect(worQt_postman.message_send_late_for_work)
 		self.gridLayout1.addWidget(self.pushButton5, 4, 0, 1, 1)
 		# 
 		self.pushButton6 = QtWidgets.QPushButton(self.gridLayoutWidget1)
@@ -148,7 +141,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton6.setObjectName("pushButton6")
 		self.pushButton6.setText("Came early")
 		self.pushButton6.setEnabled(True)
-		self.pushButton6.clicked.connect(worQt_mail_worker.message_send)
+		self.pushButton6.clicked.connect(worQt_postman.message_send)
 		self.gridLayout1.addWidget(self.pushButton6, 4, 1, 1, 1)
 		#
 		#tab2
@@ -213,7 +206,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 				attachment = url.url().strip("file:///")
 				self.widget_list.addItem(attachment)
 		except Exception as ex:
-			worQt_cache_lib.log_dump_crash()
+			worQt_logger.log_dump_crash()
 
 	def attachment_remove(self, parent):
 		try:
@@ -223,12 +216,12 @@ class Ui_Dialog(QtWidgets.QDialog):
 				index = self.widget_list.row(item)
 				self.widget_list.takeItem(index)
 		except Exception as ex:
-			worQt_cache_lib.log_dump_crash()
+			worQt_logger.log_dump_crash()
 	
 	def attachment_clear(self, parent):
 		try: self.widget_list.clear()
 		except Exception as ex:
-			worQt_cache_lib.log_dump_crash()
+			worQt_logger.log_dump_crash()
 		
 	def fillview(self):#csv or json
 		pass
@@ -255,7 +248,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		# 	connection.close()
 		# except Exception as ex:
 		# 	connection.close()
-		# 	worQt_cache_lib.log_dump_crash()
+		# 	worQt_logger.log_dump_crash()
 
 	def table_export(self):
 		destination = QtWidgets.QFileDialog.getExistingDirectoryUrl()

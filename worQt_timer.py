@@ -37,10 +37,10 @@ def check_is_weekend(day = dt.datetime.today()):
 	except:
 		return True if day.weekday() in [5,6] else False
 
-def get_time_morning_work(self):
-	self.timeDeltaBefore = self.timeStartOfDay - dt.datetime.now()
-	if not(check_is_weekend()) and self.timeDeltaBefore < dt.timedelta(hours = 1): 
-		return "Отработка меньше 1 часа в будний день"
+def get_time_morning_work(day): #deprecated with one super method
+	delta = day - dt.datetime.now()
+	if not(check_is_weekend()) and delta < dt.timedelta(hours = 1): 
+		return None #отработал меньше часа в будний 
 
 def get_time_extra_work(day):
 	today = self.today.strftime("%d.%m.%Y")
