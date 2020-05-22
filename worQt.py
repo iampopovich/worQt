@@ -30,10 +30,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 		super(Ui_Dialog,self).__init__(parent,**args)
 		self.version = "v3.1.0"
 		self.config = worQt_config.get_config()
-		self.FMT = "%Y-%m-%d %H:%M:%S"
 		self.today = worQt_timer.get_today()
 		self.is_weekend = worQt_timer.check_is_weekend(self.today)
-		self.config = worQt_config.get_config()
 		self.shutdown_time = 2700000
 		self.file_log = worQt_logger.get_file_log()
 		self.init_shutdown_timer()
