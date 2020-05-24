@@ -28,14 +28,13 @@ def get_file_log():
 	date = worQt_timer.get_today().isoformat()
 	login = os.login()
 	file_log = '{}_{}.log'.format(date,login)
-	return file_log if os.path.exists(file) else create_file_log()
+	return file_log if os.path.exists(file_log) else create_file_log()
 
 def get_file_error():
 	date = worQt_timer.get_today().isoformat()
 	login = os.login()
-	file_log = '{}_{}_error.log'.format(date,login)
-	return file_log if os.path.exists(file) else create_file_error()
-	
+	file_error = '{}_{}_error.log'.format(date,login)
+	return file_log if os.path.exists(file_error) else create_file_error()
 
 def log_dump_crash():
 	pass
