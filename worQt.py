@@ -28,12 +28,12 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v3.1.0"
-		self.config = worQt_config.get_config()
+		self.version = "v3.2.0"
+		self.config = ''#worQt_config.get_config()
 		self.today = worQt_timer.get_today()
 		self.is_weekend = worQt_timer.check_is_weekend(self.today)
 		self.shutdown_time = 2700000
-		self.file_log = worQt_logger.get_file_log()
+		self.file_log = ''#worQt_logger.get_file_log()
 		self.init_shutdown_timer()
 		self.workfolder = os.getcwd()
 
@@ -126,11 +126,11 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.gridLayout1.addWidget(self.pushButton4, 3, 2, 1, 1)
 		#
 		#tab2
-		self.tab_2 = QtWidgets.QWidget()
-		self.tab_2.setObjectName("tab_2")
-		self.tabWidget.addTab(self.tab_2, "Статистика (тест)")
+		self.tab_statistics = QtWidgets.QWidget()
+		self.tab_statistics.setObjectName("tab_statistics")
+		self.tabWidget.addTab(self.tab_statistics, "Statistics")
 		#
-		self.gridLayoutWidget2 = QtWidgets.QWidget(self.tab_2)
+		self.gridLayoutWidget2 = QtWidgets.QWidget(self.tab_statistics)
 		self.gridLayoutWidget2.setGeometry(QtCore.QRect(0, 0, 350, 360))
 		self.gridLayoutWidget2.setObjectName("gridLayoutWidget2")
 		#
@@ -141,7 +141,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton7 = QtWidgets.QPushButton(self.gridLayoutWidget2)
 		self.pushButton7.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton7.setObjectName("pushButton7")
-		self.pushButton7.setText("Обновить таблицу")
+		self.pushButton7.setText("Refresh")
 		self.pushButton7.clicked.connect(self.fillview)
 		self.gridLayout2.addWidget(self.pushButton7, 0, 0, 1, 1)
 		#
@@ -158,7 +158,59 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 		self.gridLayout2.addWidget(self.tableWidget, 1,0,1,8)
 		#
+		#tab settings
+		self.tab_settings = QtWidgets.QWidget()
+		self.tab_settings.setObjectName("tab_settings")
+		self.tabWidget.addTab(self.tab_settings, "Settings")
+		#
+		self.gridLayoutWidget3 = QtWidgets.QWidget(self.tab_settings)
+		self.gridLayoutWidget3.setGeometry(QtCore.QRect(0, 0, 350, 360))
+		self.gridLayoutWidget3.setObjectName("gridLayoutWidget3")
+		#
+		self.gridLayout3 = QtWidgets.QGridLayout(self.gridLayoutWidget3)
+		self.gridLayout3.setContentsMargins(0, 0, 0, 0)
+		self.gridLayout3.setObjectName("gridLayout3")
+		#
+		self.combo_day = QtWidgets.QComboBox(self.gridLayoutWidget3)
+		self.combo_day.setObjectName("combo_day")
+		self.combo_day.addItem("Mon")
+		self.combo_day.addItem("Tue")
+		self.combo_day.addItem("Wed")
+		self.combo_day.addItem("Thu")
+		self.combo_day.addItem("Fri")
+		self.combo_day.addItem("Sat")
+		self.combo_day.addItem("Sun")
+		self.gridLayout3.addWidget(self.combo_day, 0, 0, 1, 1)
+		#
+		self.label_day_start = QtWidgets.QLabel(self.gridLayoutWidget3)
+		self.label_day_start.setAlignment(QtCore.Qt.AlignCenter)
+		self.label_day_start.setObjectName("label_day_start")
+		self.label_day_start.setText("Day start at: ")
+		self.gridLayout3.addWidget(self.label_day_start, 1, 0, 1, 1)
+		#
+		self.timeEdit_start = QtWidgets.QTimeEdit(self.gridLayoutWidget3)
+		self.timeEdit_start.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.timeEdit_start.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+		self.timeEdit_start.setTime(QtCore.QTime(0, 0, 0))
+		self.timeEdit_start.setObjectName("timeEdit_start")
+		self.timeEdit_start.setDisplayFormat("HH:mm:ss")
+		self.gridLayout3.addWidget(self.timeEdit_start, 1, 1, 1, 1)
+		#
+		self.label_day_finish = QtWidgets.QLabel(self.gridLayoutWidget3)
+		self.label_day_finish.setAlignment(QtCore.Qt.AlignCenter)
+		self.label_day_finish.setObjectName("label_day_finish")
+		self.label_day_finish.setText("Day finish at: ")
+		self.gridLayout3.addWidget(self.label_day_finish, 1, 2, 1, 1)
+		#
+		self.timeEdit_finish = QtWidgets.QTimeEdit(self.gridLayoutWidget1)
+		self.timeEdit_finish.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.timeEdit_finish.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+		self.timeEdit_finish.setTime(QtCore.QTime(0, 0, 0))
+		self.timeEdit_finish.setObjectName("timeEdit_finish")
+		self.timeEdit_finish.setDisplayFormat("HH:mm:ss")
+		self.gridLayout3.addWidget(self.timeEdit_finish, 1, 3, 1, 1)
 		# self.fillview()
+
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 	def init_shutdown_timer(self):
