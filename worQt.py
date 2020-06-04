@@ -28,7 +28,7 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v3.2.0"
+		self.version = "v3.3.0"
 		self.config = ''#worQt_config.get_config()
 		self.today = worQt_timer.get_today()
 		self.is_weekend = worQt_timer.check_is_weekend(self.today)
@@ -60,20 +60,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.gridLayout1 = QtWidgets.QGridLayout(self.gridLayoutWidget1)
 		self.gridLayout1.setContentsMargins(0, 0, 0, 0)
 		self.gridLayout1.setObjectName("gridLayout1")
-		# 
-		self.label = QtWidgets.QLabel(self.gridLayoutWidget1)
-		self.label.setObjectName("label")
-		self.label.setText("Weekend started at: ")
-		self.gridLayout1.addWidget(self.label, 3, 0, 1, 1)
-		# 
-		self.timeEdit = QtWidgets.QTimeEdit(self.gridLayoutWidget1)
-		self.timeEdit.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-		self.timeEdit.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
-		self.timeEdit.setTime(QtCore.QTime(0, 0, 0))
-		self.timeEdit.setObjectName("timeEdit")
-		self.timeEdit.setEnabled(self.is_weekend)
-		self.timeEdit.setDisplayFormat("HH:mm:ss")
-		self.gridLayout1.addWidget(self.timeEdit, 3, 1, 1, 1)
 		# 
 		self.textEdit = QtWidgets.QTextEdit(self.gridLayoutWidget1)
 		self.textEdit.setObjectName("textEdit")
@@ -116,14 +102,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton3.setText("Clear all")
 		self.pushButton3.clicked.connect(self.attachment_clear)
 		self.gridLayout1.addWidget(self.pushButton3,8,2,1,1)
-		# 
-		self.pushButton4 = QtWidgets.QPushButton(self.gridLayoutWidget1)
-		self.pushButton4.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-		self.pushButton4.setObjectName("pushButton4")
-		self.pushButton4.setText("Check in")
-		self.pushButton4.setEnabled(self.is_weekend)
-		self.pushButton4.clicked.connect(worQt_postman.message_send_extrwork_checkin)
-		self.gridLayout1.addWidget(self.pushButton4, 3, 2, 1, 1)
 		#
 		#tab2
 		self.tab_statistics = QtWidgets.QWidget()
@@ -142,21 +120,46 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton7.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton7.setObjectName("pushButton7")
 		self.pushButton7.setText("Refresh")
-		self.pushButton7.clicked.connect(self.fillview)
+		self.pushButton7.clicked.connect(self.fill_view_statistic_bind)
 		self.gridLayout2.addWidget(self.pushButton7, 0, 0, 1, 1)
 		#
 		self.pushButton8 = QtWidgets.QPushButton(self.gridLayoutWidget2)
 		self.pushButton8.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton8.setObjectName("pushButton8")
 		self.pushButton8.setText("-----------------")
-		self.pushButton8.clicked.connect(self.table_export)
+		# self.pushButton8.clicked.connect(self.table_export_bind)
 		self.gridLayout2.addWidget(self.pushButton8, 0, 1, 1, 1)
 		#
 		self.tableWidget = QtWidgets.QTableWidget()
 		self.tableWidget.setObjectName("tableView")
+		self.tableWidget.setColumnCount(4)
+		self.tableWidget.setRowCount(0)
+		self.tableWidget.setHorizontalHeaderLabels(worQt_logger.STATS_KEYS)
 		self.tableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
 		self.tableWidget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 		self.gridLayout2.addWidget(self.tableWidget, 1,0,1,8)
+		#
+		self.label = QtWidgets.QLabel(self.gridLayoutWidget2)
+		self.label.setObjectName("label")
+		self.label.setText("Weekend started at: ")
+		self.gridLayout2.addWidget(self.label, 2, 0, 1, 2)
+		#
+		self.timeEdit = QtWidgets.QTimeEdit(self.gridLayoutWidget2)
+		self.timeEdit.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.timeEdit.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+		self.timeEdit.setTime(QtCore.QTime(0, 0, 0))
+		self.timeEdit.setObjectName("timeEdit")
+		self.timeEdit.setEnabled(self.is_weekend)
+		self.timeEdit.setDisplayFormat("HH:mm:ss")
+		self.gridLayout2.addWidget(self.timeEdit, 2, 2, 1, 1)
+		# 
+		self.pushButton4 = QtWidgets.QPushButton(self.gridLayoutWidget2)
+		self.pushButton4.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+		self.pushButton4.setObjectName("pushButton4")
+		self.pushButton4.setText("Check in")
+		# self.pushButton4.clicked.connect(worQt_postman.message_send_extrwork_checkin)
+		self.pushButton4.clicked.connect(self.check_in_bind)
+		self.gridLayout2.addWidget(self.pushButton4, 2, 3, 1, 1)
 		#
 		#tab settings
 		self.tab_settings = QtWidgets.QWidget()
@@ -173,13 +176,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		#
 		self.combo_day = QtWidgets.QComboBox(self.gridLayoutWidget3)
 		self.combo_day.setObjectName("combo_day")
-		self.combo_day.addItem("Mon")
-		self.combo_day.addItem("Tue")
-		self.combo_day.addItem("Wed")
-		self.combo_day.addItem("Thu")
-		self.combo_day.addItem("Fri")
-		self.combo_day.addItem("Sat")
-		self.combo_day.addItem("Sun")
+		self.combo_day.addItems(["Mon","Tue","Wed","Thu","Fri","Sat","Sun"])
 		self.gridLayout3.addWidget(self.combo_day, 0, 0, 1, 1)
 		#
 		self.label_day_start = QtWidgets.QLabel(self.gridLayoutWidget3)
@@ -209,7 +206,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.timeEdit_finish.setObjectName("timeEdit_finish")
 		self.timeEdit_finish.setDisplayFormat("HH:mm:ss")
 		self.gridLayout3.addWidget(self.timeEdit_finish, 1, 3, 1, 1)
-		# self.fillview()
 
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
@@ -248,52 +244,12 @@ class Ui_Dialog(QtWidgets.QDialog):
 		td = worQt_postman.message_send_extrawork(self.today)
 		self.textEdit.setText(str(td))
 
+	def fill_view_statistic_bind(self):
+		worQt_logger.fill_view_statistic(self)
 
 	def check_in_bind(self):
+		worQt_logger.set_check_in(self)
 		pass 
-
-	def fillview(self):#csv or json
-		pass
-		# try:
-		# 	self.tableWidget.setColumnCount(0)
-		# 	self.tableWidget.setRowCount(0)
-		# 	connection = sqlite3.connect(self.file_log)
-		# 	cursor = connection.cursor()
-		# 	cursor.execute('''SELECT date_ as "Дата", 
-		# 					session_start as "Начало смены",
-		# 					session_end as "Конец смены",
-		# 					duration as "Всего отработано",
-		# 					duration_full as "Полных часов",
-		# 					index_ as "Коэффициент"
-		# 					FROM session_log''')
-		# 	names = list(map(lambda x: x[0], cursor.description))
-		# 	[self.tableWidget.insertColumn(i) for i in range(len(names))]
-		# 	for row, form in enumerate(cursor):
-		# 		self.tableWidget.insertRow(row)
-		# 		for column, item in enumerate(form):
-		# 			# self.tableWidget.insertColumn(column)
-		# 			self.tableWidget.setItem(row, column, QtWidgets.QTableWidgetItem(str(item)))
-		# 	self.tableWidget.setHorizontalHeaderLabels(names)
-		# 	connection.close()
-		# except Exception as ex:
-		# 	connection.close()
-		# 	worQt_logger.log_dump_crash()
-
-	def table_export(self):
-		destination = QtWidgets.QFileDialog.getExistingDirectoryUrl()
-		try:
-			file_log = self.file_log
-			fileOutput = sys.argv[2]
-			inputFile = open(fileInput) #open json file
-			outputFile = open(fileOutput, 'w') #load csv file
-			data = json.load(inputFile) #load json content
-			inputFile.close() #close the input file
-			output = csv.writer(outputFile) #create a csv.write
-			output.writerow(data[0].keys())  # header row
-			for row in data:
-				output.writerow(row.values()) #values row
-		except: pass #unstable sorry 
-		pass
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
