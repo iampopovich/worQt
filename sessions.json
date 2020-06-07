@@ -1,0 +1,16 @@
+{
+	"sessions":[
+		{	
+			"Date":"heh",
+			"Start":100,
+			"Finish":2000,
+			"Duration":3000
+		},
+		{
+			"Date":"heh",
+			"Start":10023,
+			"Finish":2000123,
+			"Duration":30005234
+		}
+	]
+}

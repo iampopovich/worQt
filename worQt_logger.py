@@ -6,19 +6,10 @@ import json
 STATS_KEYS = ['Date', 'Start', 'Finish', 'Duration']
 
 def fill_view_statistic(self, file_sessions = 'sessions.json'):#csv or json
+	self.tableWidget.setRowCount(0)
 	with open(file_sessions, 'r') as f:
 		data = json.load(f)
-		# cursor.execute('''SELECT date_ as "Дата", 
-		# 				session_start as "Начало смены",
-		# 				session_end as "Конец смены",
-		# 				duration as "Всего отработано",
-		# 				duration_full as "Полных часов",
-		# 				index_ as "Коэффициент"
-		# 				FROM session_log''')
-		# names = list(map(lambda x: x[0], cursor.description))
-		# [self.tableWidget.insertColumn(i) for i in range(len(names))]
-	sessions = data['sessions']
-	for i , session in enumerate(sessions):
+	for i , session in enumerate(data['sessions']):
 		self.tableWidget.insertRow(self.tableWidget.rowCount())
 		for j, k in enumerate(STATS_KEYS):
 			it = QtWidgets.QTableWidgetItem()
@@ -50,7 +41,7 @@ def set_file_log(self, file_log):
 
 def set_check_in(self):
 	session = {
-		'Date': None,
+		'Date': worQt_timer.get_today(),
 		'Start': None,
 		'Finish': None,
 		'Duration': None,
@@ -62,6 +53,15 @@ def set_check_in(self):
 		it.setData(QtCore.Qt.DisplayRole, str(session[k]))
 		self.tableWidget.setItem(i,j,it)
 	self.tableWidget.show()
+
+def set_session_finish(self, session):
+	session['Finish'] = worQt_timer.get_today()
+	session['duration'] = session['Finish'] - session['Start']
+	# i = self.selectedRowIndex()
+	# for j, (k,v) in enumerate(session.items()):
+	# 	it = QtWidgets.QTableWidgetItem()
+	# 	it.setData(QtCore.Qt.DisplayRole, str(session[k]))
+	# 	self.tableWidget.setItem(i,j,it)
 
 def create_file_log():
 	date = worQt_timer.get_today().isoformat()
