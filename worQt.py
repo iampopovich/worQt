@@ -71,9 +71,9 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.informationLabel.setObjectName("informationLabel")
 		self.gridLayout1.addWidget(self.informationLabel, 1, 0, 1, 3)
 		# 
-		self.widget_list = DragAndDropList(self.gridLayoutWidget1)
-		self.widget_list.setObjectName("widget_list")
-		self.gridLayout1.addWidget(self.widget_list,6,0,3,2)
+		self.listWidget = DragAndDropList(self.gridLayoutWidget1)
+		self.listWidget.setObjectName("listWidget")
+		self.gridLayout1.addWidget(self.listWidget,6,0,3,2)
 		# 
 		self.pushButton = QtWidgets.QPushButton(self.gridLayoutWidget1)
 		self.pushButton.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
@@ -157,7 +157,6 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.pushButton4.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.pushButton4.setObjectName("pushButton4")
 		self.pushButton4.setText("Check in")
-		# self.pushButton4.clicked.connect(worQt_postman.message_send_extrwork_checkin)
 		self.pushButton4.clicked.connect(self.check_in_bind)
 		self.gridLayout2.addWidget(self.pushButton4, 2, 3, 1, 1)
 		#
@@ -199,14 +198,28 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.label_day_finish.setText("Day finish at: ")
 		self.gridLayout3.addWidget(self.label_day_finish, 1, 2, 1, 1)
 		#
-		self.timeEdit_finish = QtWidgets.QTimeEdit(self.gridLayoutWidget1)
+		self.timeEdit_finish = QtWidgets.QTimeEdit(self.gridLayoutWidget3)
 		self.timeEdit_finish.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 		self.timeEdit_finish.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
 		self.timeEdit_finish.setTime(QtCore.QTime(0, 0, 0))
 		self.timeEdit_finish.setObjectName("timeEdit_finish")
 		self.timeEdit_finish.setDisplayFormat("HH:mm:ss")
 		self.gridLayout3.addWidget(self.timeEdit_finish, 1, 3, 1, 1)
-
+		#
+		self.label_connection_config = QtWidgets.QLabel(self.gridLayoutWidget3)
+		self.label_connection_config.setAlignment(QtCore.Qt.AlignCenter)
+		self.label_connection_config.setObjectName("label_connection_config")
+		self.label_connection_config.setText("Set connection config")
+		self.label_connection_config.setWordWrap(True)
+		self.label_connection_config.setAlignment(QtCore.Qt.AlignVCenter)
+		self.gridLayout3.addWidget(self.label_connection_config, 2, 0, 1, 4)
+		#
+		self.textEdit_conection = QtWidgets.QTextEdit(self.gridLayoutWidget3)
+		self.textEdit_conection.setObjectName("textEdit_conection")
+		self.textEdit_conection.setFont(font)
+		self.gridLayout3.addWidget(self.textEdit_conection, 3, 0, 1, 4)
+		config = worQt_config.get_config()
+		self.textEdit_conection.setText(str(config))
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 	def init_shutdown_timer(self):
@@ -221,35 +234,33 @@ class Ui_Dialog(QtWidgets.QDialog):
 			attachments = QtWidgets.QFileDialog.getOpenFileUrls()[0]
 			for url in attachments:
 				attachment = url.url().strip("file:///")
-				self.widget_list.addItem(attachment)
+				self.listWidget.addItem(attachment)
 		except Exception as ex:
 			worQt_logger.log_dump_crash()
 
 	def attachment_remove(self, parent):
 		try:
-			list_items = self.widget_list.selectedItems()
+			list_items = self.listWidget.selectedItems()
 			if not list_items: return
 			for item in list_items:
-				index = self.widget_list.row(item)
-				self.widget_list.takeItem(index)
+				index = self.listWidget.row(item)
+				self.listWidget.takeItem(index)
 		except Exception as ex:
 			worQt_logger.log_dump_crash()
 	
 	def attachment_clear(self, parent):
-		try: self.widget_list.clear()
+		try: self.listWidget.clear()
 		except Exception as ex:
 			worQt_logger.log_dump_crash()
 	
 	def message_send_bind(self):
-		td = worQt_postman.message_send_extrawork(self.today)
-		self.textEdit.setText(str(td))
+		worQt_postman.message_send_extrawork(self.today)
 
 	def fill_view_statistic_bind(self):
 		worQt_logger.fill_view_statistic(self)
 
 	def check_in_bind(self):
 		worQt_logger.set_check_in(self)
-		pass 
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)

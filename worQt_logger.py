@@ -102,7 +102,6 @@ def log_dump_crash():
 
 def log_write_action(session):
 	file = get_file_log()
-	print(file)
 	with open(file, 'r+') as out:
 		try:
 			data = json.load(out)
