@@ -28,32 +28,36 @@ class DragAndDropList(QtWidgets.QListWidget):
 class Ui_Dialog(QtWidgets.QDialog):
 	def __init__(self,parent = None, **args):
 		super(Ui_Dialog,self).__init__(parent,**args)
-		self.version = "v3.3.2"
-		self.config = ''#worQt_config.get_config()
+		self.version = "v3.3.3"
+		self.config = worQt_config.get_config()
 		self.today = worQt_timer.get_today()
 		self.is_weekend = worQt_timer.check_is_weekend(self.today)
 		self.shutdown_time = 2700000
-		self.file_log = ''#worQt_logger.get_file_log()
 		self.init_shutdown_timer()
-		self.workfolder = os.getcwd()
 
 	def setupUi(self, Dialog):
 		Dialog.setObjectName("Dialog")
 		Dialog.setWindowTitle("WorQt {0}".format(self.version))
 		Dialog.setWindowFlag(QtCore.Qt.WindowCloseButtonHint)
 		Dialog.setWindowModality(QtCore.Qt.NonModal)
-		Dialog.setFixedSize(355, 390)
+		Dialog.setMinimumHeight(400)
+		Dialog.setMinimumWidth(400)
 		font = QtGui.QFont()
 		font.setPointSize(10)
-		self.tabWidget = QtWidgets.QTabWidget(Dialog)
-		self.tabWidget.setGeometry(QtCore.QRect(0, 0, 355, 390))
+		#layout
+		self.layout = QtWidgets.QGridLayout(Dialog)
+		Dialog.setLayout(self.layout)
+		#tabWidget
+		self.tabWidget = QtWidgets.QTabWidget()
+		self.tabWidget.setGeometry(QtCore.QRect(0, 0, 360, 360))
 		self.tabWidget.setObjectName("tabWidget")
+		self.layout.addWidget(self.tabWidget)
 		#tab1
-		self.tab = QtWidgets.QWidget()
-		self.tab.setObjectName("tab")
-		self.tabWidget.addTab(self.tab, "Editor")
+		self.tab_editor = QtWidgets.QWidget()
+		self.tab_editor.setObjectName("tab_editor")
+		self.tabWidget.addTab(self.tab_editor, "Editor")
 		#
-		self.gridLayoutWidget1 = QtWidgets.QWidget(self.tab)
+		self.gridLayoutWidget1 = QtWidgets.QWidget(self.tab_editor)
 		self.gridLayoutWidget1.setGeometry(QtCore.QRect(0, 0, 350, 360))
 		self.gridLayoutWidget1.setObjectName("gridLayoutWidget1")
 		# 
@@ -218,8 +222,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 		self.textEdit_conection.setObjectName("textEdit_conection")
 		self.textEdit_conection.setFont(font)
 		self.gridLayout3.addWidget(self.textEdit_conection, 3, 0, 1, 4)
-		config = worQt_config.get_config()
-		self.textEdit_conection.setText(str(config))
+		self.textEdit_conection.setText(str(self.config))
 		QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 	def init_shutdown_timer(self):
@@ -262,6 +265,8 @@ class Ui_Dialog(QtWidgets.QDialog):
 	def check_in_bind(self):
 		worQt_logger.set_check_in(self)
 
+	def update_tab_widget_size(self):
+		self.tabWidget.resize
 def main():
 	app = QtWidgets.QApplication(sys.argv)
 	Dialog = QtWidgets.QDialog()
