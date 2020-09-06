@@ -1,6 +1,7 @@
 # Editors
 .vscode/
 .idea/
+*.l0g
 
 # Vagrant
 .vagrant/
